@@ -27,6 +27,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            "move_arm_bt = kinova_py.move_arm_bt:main"
         ],
     },
 )
