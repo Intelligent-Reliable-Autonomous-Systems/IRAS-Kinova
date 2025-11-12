@@ -40,7 +40,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
 
     ```
     rosdep install --ignore-src --from-paths src -y -r
-    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
     ```
 
 7. Source the workspace
@@ -54,7 +54,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
 1. Launch the robot in rviz
 
     ```
-    ros2 launch kinova kinova.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch kinova_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
 2. Send a trajectory command to the robot
@@ -66,4 +66,25 @@ Kinova Kortex Gen3 arm package for IRAS lab
         { positions: [0, 0, 0, 0, 2, 0, 0], time_from_start: { sec: 1 } },
     ]
     }" -1
+    ```
+
+3. Try resetting the robot
+
+    ```
+    ros2 run kinova_cpp kinova_reset --ros-args -p move_time:=5
+
+
+## Testing Sim to Real with a Reach Policy
+
+
+1. Launch the robot in rviz
+
+    ```
+    ros2 launch kinova kinova.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ```
+
+2. Launch the policy
+
+    ```
+    python3 sim2real/scripts/sim2real/run_task_reach.py
     ```
