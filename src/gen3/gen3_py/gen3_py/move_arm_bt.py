@@ -4,6 +4,7 @@ from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import py_trees
 
+
 # === Behavior for sending a trajectory ===
 class MoveArm(py_trees.behaviour.Behaviour):
     def __init__(self, node: Node, name: str, joint_positions, move_time: float):
@@ -19,9 +20,7 @@ class MoveArm(py_trees.behaviour.Behaviour):
     def update(self):
         if not self.sent:
             msg = JointTrajectory()
-            msg.joint_names = [
-                'joint_1','joint_2','joint_3','joint_4','joint_5','joint_6','joint_7'
-            ]
+            msg.joint_names = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "joint_7"]
             point = JointTrajectoryPoint()
             point.positions = self.joint_positions
             point.time_from_start.sec = int(self.move_time)
@@ -44,18 +43,14 @@ class MoveArm(py_trees.behaviour.Behaviour):
 # === Node that runs the BT ===
 class KinovaBTNode(Node):
     def __init__(self):
-        super().__init__('kinova_bt_node')
-        self.publisher = self.create_publisher(
-            JointTrajectory,
-            '/joint_trajectory_controller/joint_trajectory',
-            10
-        )
+        super().__init__("kinova_bt_node")
+        self.publisher = self.create_publisher(JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10)
 
         # Define behaviors
-        home_positions   = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        home_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         target_positions = [1.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0]
 
-        move_home   = MoveArm(self, "MoveToHome",   home_positions,   3.0)
+        move_home = MoveArm(self, "MoveToHome", home_positions, 3.0)
         move_target = MoveArm(self, "MoveToTarget", target_positions, 4.0)
 
         # Build a simple sequence tree

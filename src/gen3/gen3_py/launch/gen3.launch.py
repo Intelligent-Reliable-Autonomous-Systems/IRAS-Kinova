@@ -20,22 +20,24 @@ from launch.substitutions import (
     PathJoinSubstitution,
 )
 
+
 def launch_setup(context, *args, **kwargs):
 
     # Packages to load
-    pkg_kortex_bringup = get_package_share_directory('kortex_bringup')
+    pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot_ip = LaunchConfiguration("robot_ip")
 
-    
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, 'launch', 'gen3.launch.py'])),
-        launch_arguments={"use_fake_hardware": use_fake_hardware,
-                          "robot_ip": robot_ip,
-                          "gripper": "robotiq_2f_85"}.items(),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])),
+        launch_arguments={
+            "use_fake_hardware": use_fake_hardware,
+            "robot_ip": robot_ip,
+            "gripper": "robotiq_2f_85",
+        }.items(),
     )
 
     nodes_to_launch = [
@@ -46,7 +48,6 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-   
 
     declared_arguments = []
 
@@ -68,4 +69,3 @@ def generate_launch_description():
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
-

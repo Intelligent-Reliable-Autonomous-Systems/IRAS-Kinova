@@ -10,8 +10,11 @@ import fnmatch
 import io
 from typing import List, Tuple
 import sys
+import re
+import itertools
 
 import yaml
+
 
 def parse_env_config(env_config_path: str = "env.yaml") -> dict:
     """
@@ -62,11 +65,15 @@ def get_robot_joint_properties(
     default_pos = {}
     default_vel = {}
     joint_names_expr_list = []
+    joint_names = []
+    actions = []
 
     for actuator in actuator_data:
         actuator_config = actuator_data.get(actuator)
         joint_names_expr = actuator_config.get("joint_names_expr")
         joint_names_expr_list.extend(joint_names_expr)
+
+        [[joint_names.append(jn) for jn in expand_fnmatch(j)] for j in joint_names_expr]
 
         effort_limit = actuator_config.get("effort_limit")
         velocity_limit = actuator_config.get("velocity_limit")
@@ -121,9 +128,7 @@ def get_robot_joint_properties(
     elif isinstance(init_joint_pos, dict):
         default_pos.update(init_joint_pos)
     else:
-        print(
-            f"Failed to parse init state joint position, expected float, int, or dict, got: {type(init_joint_pos)}"
-        )
+        print(f"Failed to parse init state joint position, expected float, int, or dict, got: {type(init_joint_pos)}")
 
     # parse default joint velocity
     init_joint_vel = data.get("scene").get("robot").get("init_state").get("joint_vel")
@@ -133,9 +138,7 @@ def get_robot_joint_properties(
     elif isinstance(init_joint_vel, dict):
         default_vel.update(init_joint_vel)
     else:
-        print(
-            f"Failed to parse init state vel position, expected float, int, or dict, got: {type(init_joint_vel)}"
-        )
+        print(f"Failed to parse init state vel position, expected float, int, or dict, got: {type(init_joint_vel)}")
 
     stiffness_inorder = []
     damping_inorder = []
@@ -145,29 +148,50 @@ def get_robot_joint_properties(
     default_vel_inorder = []
 
     for joint in joint_names:
-        for pattern in joint_names_expr_list:
-            if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
-                if pattern in stiffness:
-                    stiffness_inorder.append(stiffness[pattern])
-                else:
-                    stiffness_inorder.append(0)
-                    print(f"{joint} stiffness not found, setting to 0")
-                if pattern in damping:
-                    damping_inorder.append(damping[pattern])
-                else:
-                    damping_inorder.append(0)
-                    print(f"{joint} damping not found, setting to 0")
-                if pattern in effort_limits:
-                    effort_limits_inorder.append(effort_limits[pattern])
-                else:
-                    effort_limits_inorder.append(0)
-                    print(f"{joint} effort limit not found, setting to 0")
-                if pattern in velocity_limits:
-                    velocity_limits_inorder.append(velocity_limits[pattern])
-                else:
-                    velocity_limits_inorder.append(0)
-                    print(f"{joint} velocity limit not found, setting to 0")
-                break
+        if isinstance(stiffness, float):
+            stiffness_inorder.append(stiffness)
+        elif isinstance(stiffness, dict):
+            for pattern in list(stiffness.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in stiffness:
+                        stiffness_inorder.append(stiffness[pattern])
+                    else:
+                        stiffness_inorder.append(0)
+                        print(f"{joint} stiffness not found, setting to 0")
+                    break
+        if isinstance(damping, float):
+            damping_inorder.append(damping)
+        elif isinstance(damping, dict):
+            for pattern in list(damping.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in damping:
+                        damping_inorder.append(damping[pattern])
+                    else:
+                        damping_inorder.append(0)
+                        print(f"{joint} damping not found, setting to 0")
+                    break
+        if isinstance(effort_limit, float):
+            effort_limits_inorder.append(effort_limit)
+        elif isinstance(effort_limit, dict):
+            for pattern in list(effort_limit.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in effort_limits:
+                        effort_limits_inorder.append(effort_limits[pattern])
+                    else:
+                        effort_limits_inorder.append(0)
+                        print(f"{joint} effort limit not found, setting to 0")
+                    break
+        if isinstance(velocity_limit, float):
+            velocity_limits_inorder.append(velocity_limit)
+        elif isinstance(velocity_limit, dict):
+            for pattern in list(velocity_limit.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in velocity_limits:
+                        velocity_limits_inorder.append(velocity_limits[pattern])
+                    else:
+                        velocity_limits_inorder.append(0)
+                        print(f"{joint} velocity limit not found, setting to 0")
+                    break
 
         default_position_found = False
         for pattern in default_pos:
@@ -189,6 +213,9 @@ def get_robot_joint_properties(
             default_vel_inorder.append(0)
             print(f"{joint} default velocity not found, setting to 0")
 
+    act_list = data.get("actions")
+    [[actions.append(a) for a in act_list.get(act).get("joint_names")] for act in act_list]
+
     return (
         effort_limits_inorder,
         velocity_limits_inorder,
@@ -196,7 +223,10 @@ def get_robot_joint_properties(
         damping_inorder,
         default_pos_inorder,
         default_vel_inorder,
+        joint_names,
+        actions,
     )
+
 
 def get_physics_properties(data: dict) -> dict:
     """
@@ -209,3 +239,34 @@ def get_physics_properties(data: dict) -> dict:
         tuple: A tuple containing the decimation, dt, and render interval.
     """
     return data.get("decimation"), data.get("sim").get("dt"), data.get("sim").get("render_interval")
+
+
+def expand_fnmatch(pattern: str) -> list[str]:
+
+    # Find character ranges like [1-7]
+    ranges = re.findall(r"\[([^\]]+)\]", pattern)
+    if not ranges:
+        return [pattern]
+
+    # Convert each range to a list of characters/numbers
+    options = []
+    for r in ranges:
+        chars = []
+        i = 0
+        while i < len(r):
+            if i + 2 < len(r) and r[i + 1] == "-":
+                chars.extend([str(x) for x in range(int(r[i]), int(r[i + 2]) + 1)])
+                i += 3
+            else:
+                chars.append(r[i])
+                i += 1
+        options.append(chars)
+
+    # Replace ranges with placeholders to combine later
+    parts = re.split(r"\[[^\]]+\]", pattern)
+    all_combinations = []
+    for combo in itertools.product(*options):
+        s = "".join(p + c for p, c in zip(parts, list(combo) + [""]))
+        all_combinations.append(s)
+
+    return all_combinations

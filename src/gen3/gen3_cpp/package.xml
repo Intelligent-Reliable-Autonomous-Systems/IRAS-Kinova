@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>kinova_cpp</name>
+  <name>gen3_cpp</name>
   <version>0.0.0</version>
-  <description>Kinova C++ Package for IRAS lab</description>
+  <description>Kinova Gen3 C++ Package for IRAS lab</description>
   <maintainer email="soloww@oregonstate.edu">Will Solow</maintainer>
   <license>BSD-3-Clause</license>
 

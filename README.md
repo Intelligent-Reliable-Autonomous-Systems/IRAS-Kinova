@@ -54,7 +54,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
 1. Launch the robot in rviz
 
     ```
-    ros2 launch kinova_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
 2. Send a trajectory command to the robot
@@ -71,7 +71,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
 3. Try resetting the robot
 
     ```
-    ros2 run kinova_cpp kinova_reset --ros-args -p move_time:=5
+    ros2 run gen3_cpp gen3_reset --ros-args -p move_time:=5
 
 
 ## Testing Sim to Real with a Reach Policy

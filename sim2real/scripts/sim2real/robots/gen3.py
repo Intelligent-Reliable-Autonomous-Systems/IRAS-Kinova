@@ -21,6 +21,7 @@ import numpy as np
 
 from controllers.policy_controller import PolicyController
 
+
 class Gen3ReachPolicy(PolicyController):
     """Policy controller for Gen3 Reach using a pre-trained policy model."""
 
@@ -61,8 +62,8 @@ class Gen3ReachPolicy(PolicyController):
             position: A list or array of joint positions.
             velocity: A list or array of joint velocities.
         """
-        self.current_joint_positions = np.array(position[:self.num_joints], dtype=np.float32)
-        self.current_joint_velocities = np.array(velocity[:self.num_joints], dtype=np.float32)
+        self.current_joint_positions = np.array(position[: self.num_joints], dtype=np.float32)
+        self.current_joint_velocities = np.array(velocity[: self.num_joints], dtype=np.float32)
         self.has_joint_data = True
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:

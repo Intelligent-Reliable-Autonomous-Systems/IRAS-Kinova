@@ -27,6 +27,7 @@ import torch
 
 from utils.config_loader import parse_env_config, get_physics_properties, get_robot_joint_properties
 
+
 class PolicyController:
     """A controller that loads and executes a policy from a file."""
 
@@ -52,8 +53,7 @@ class PolicyController:
         with open(policy_file_path, "rb") as f:
             file = io.BytesIO(f.read())
         self.policy = torch.jit.load(file)
-        print(type(self.policy))
-        print(self.policy)
+
         self.policy_env_params = parse_env_config(policy_env_path)
 
         self._decimation, self._dt, self.render_interval = get_physics_properties(self.policy_env_params)
@@ -63,9 +63,16 @@ class PolicyController:
         print(f"{'Timestep (dt):':<18} {self._dt}")
         print(f"{'Render interval:':<18} {self.render_interval}")
 
-        self._max_effort, self._max_vel, self._stiffness, self._damping, self.default_pos, self.default_vel = get_robot_joint_properties(
-            self.policy_env_params, self.dof_names
-        )
+        (
+            self._max_effort,
+            self._max_vel,
+            self._stiffness,
+            self._damping,
+            self.default_pos,
+            self.default_vel,
+            self.joint_names,
+            self.actions,
+        ) = get_robot_joint_properties(self.policy_env_params, self.dof_names)
         self.num_joints = len(self.dof_names)
 
         print("\n--- Robot joint properties ---")
