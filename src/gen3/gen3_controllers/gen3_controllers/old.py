@@ -1,58 +1,12 @@
-# Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
-#
-# NVIDIA CORPORATION and its licensors retain all intellectual property
-# and proprietary rights in and to this software, related documentation
-# and any modifications thereto. Any use, reproduction, disclosure or
-# distribution of this software and related documentation without an express
-# license agreement from NVIDIA CORPORATION is strictly prohibited.
-
-import fnmatch
-import io
-from typing import List, Tuple
-import sys
-import re
-import itertools
-
-import yaml
-
-
-def parse_env_config(env_config_path: str = "env.yaml") -> dict:
-    """
-    Parses the environment configuration file from a local path or an Omniverse URL.
-
-    Args:
-        env_config_path (str, optional): The path to the environment configuration file. Can be local or an Omniverse URL.
-
-    Returns:
-        dict: The parsed environment configuration data.
-    """
-
-    class SafeLoaderIgnoreUnknown(yaml.SafeLoader):
-        def ignore_unknown(self, node) -> None:
-            return None
-
-        def tuple_constructor(loader, node) -> tuple:
-            return tuple(loader.construct_sequence(node))
-
-    SafeLoaderIgnoreUnknown.add_constructor("tag:yaml.org,2002:python/tuple", SafeLoaderIgnoreUnknown.tuple_constructor)
-    SafeLoaderIgnoreUnknown.add_constructor(None, SafeLoaderIgnoreUnknown.ignore_unknown)
-
-    with open(env_config_path, "rb") as f:
-        file = io.BytesIO(f.read())
-
-    data = yaml.load(file, Loader=SafeLoaderIgnoreUnknown)
-    return data
-
-
+'''
 def get_robot_joint_properties(
-    data: dict, joint_names: List[str]
+    self, data: dict
 ) -> Tuple[List[float], List[float], List[float], List[float], List[float], List[float]]:
     """
     Gets the robot joint properties from the environment configuration data.
 
     Args:
         data (dict): The environment configuration data.
-        joint_names (List[str]): The list of joint names in the expected order.
 
     Returns:
         tuple: A tuple containing the effort limits, velocity limits, stiffness, damping, default positions, and default velocities.
@@ -73,12 +27,12 @@ def get_robot_joint_properties(
         joint_names_expr = actuator_config.get("joint_names_expr")
         joint_names_expr_list.extend(joint_names_expr)
 
-        [[joint_names.append(jn) for jn in expand_fnmatch(j)] for j in joint_names_expr]
-
         effort_limit = actuator_config.get("effort_limit")
         velocity_limit = actuator_config.get("velocity_limit")
         joint_stiffness = actuator_config.get("stiffness")
         joint_damping = actuator_config.get("damping")
+
+        [[joint_names.append(jn) for jn in self.expand_fnmatch(j)] for j in joint_names_expr]
 
         if isinstance(effort_limit, (float, int)) or effort_limit is None:
             if effort_limit is None or effort_limit == float("inf"):
@@ -88,7 +42,9 @@ def get_robot_joint_properties(
         elif isinstance(effort_limit, dict):
             effort_limits.update(effort_limit)
         else:
-            print(f"Failed to parse effort limit, expected float, int, or dict, got: {type(effort_limit)}")
+            self.get_logger().error(
+                f"Failed to parse effort limit, expected float, int, or dict, got: {type(effort_limit)}"
+            )
 
         if isinstance(velocity_limit, (float, int)) or velocity_limit is None:
             if velocity_limit is None or velocity_limit == float("inf"):
@@ -98,7 +54,9 @@ def get_robot_joint_properties(
         elif isinstance(velocity_limit, dict):
             velocity_limits.update(velocity_limit)
         else:
-            print(f"Failed to parse velocity limit, expected float, int, or dict, got: {type(velocity_limit)}")
+            self.get_logger().error(
+                f"Failed to parse velocity limit, expected float, int, or dict, got: {type(velocity_limit)}"
+            )
 
         if isinstance(joint_stiffness, (float, int)) or joint_stiffness is None:
             if joint_stiffness is None:
@@ -108,7 +66,9 @@ def get_robot_joint_properties(
         elif isinstance(joint_stiffness, dict):
             stiffness.update(joint_stiffness)
         else:
-            print(f"Failed to parse stiffness, expected float, int, or dict, got: {type(joint_stiffness)}")
+            self.get_logger().error(
+                f"Failed to parse stiffness, expected float, int, or dict, got: {type(joint_stiffness)}"
+            )
 
         if isinstance(joint_damping, (float, int)) or joint_damping is None:
             if joint_damping is None:
@@ -118,7 +78,9 @@ def get_robot_joint_properties(
         elif isinstance(joint_damping, dict):
             damping.update(joint_damping)
         else:
-            print(f"Failed to parse damping, expected float, int, or dict, got: {type(joint_damping)}")
+            self.get_logger().error(
+                f"Failed to parse damping, expected float, int, or dict, got: {type(joint_damping)}"
+            )
 
     # parse default joint position
     init_joint_pos = data.get("scene").get("robot").get("init_state").get("joint_pos")
@@ -128,7 +90,9 @@ def get_robot_joint_properties(
     elif isinstance(init_joint_pos, dict):
         default_pos.update(init_joint_pos)
     else:
-        print(f"Failed to parse init state joint position, expected float, int, or dict, got: {type(init_joint_pos)}")
+        self.get_logger().error(
+            f"Failed to parse init state joint position, expected float, int, or dict, got: {type(init_joint_pos)}"
+        )
 
     # parse default joint velocity
     init_joint_vel = data.get("scene").get("robot").get("init_state").get("joint_vel")
@@ -138,7 +102,9 @@ def get_robot_joint_properties(
     elif isinstance(init_joint_vel, dict):
         default_vel.update(init_joint_vel)
     else:
-        print(f"Failed to parse init state vel position, expected float, int, or dict, got: {type(init_joint_vel)}")
+        self.get_logger().error(
+            f"Failed to parse init state vel position, expected float, int, or dict, got: {type(init_joint_vel)}"
+        )
 
     stiffness_inorder = []
     damping_inorder = []
@@ -193,29 +159,35 @@ def get_robot_joint_properties(
                         print(f"{joint} velocity limit not found, setting to 0")
                     break
 
-        default_position_found = False
-        for pattern in default_pos:
-            if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
-                default_pos_inorder.append(default_pos[pattern])
-                default_position_found = True
-                break
-        if not default_position_found:
-            default_pos_inorder.append(0)
-            print(f"{joint} default position not found, setting to 0")
+        if isinstance(default_pos, float):
+            default_pos_inorder.append(default_pos)
+        elif isinstance(default_pos, dict):
+            for pattern in list(default_pos.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in default_pos:
+                        default_pos_inorder.append(default_pos[pattern])
+                    else:
+                        default_pos_inorder.append(0)
+                        self.get_logger().warn(f"{joint} default position not found, setting to 0")
+                    break
 
-        default_velocity_found = False
-        for pattern in default_vel:
-            if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
-                default_vel_inorder.append(default_vel[pattern])
-                default_velocity_found = True
-                break
-        if not default_velocity_found:
-            default_vel_inorder.append(0)
-            print(f"{joint} default velocity not found, setting to 0")
+        if isinstance(default_vel, float):
+            default_vel_inorder.append(default_vel)
+        elif isinstance(default_vel, dict):
+            for pattern in list(default_vel.keys()):
+                if fnmatch.fnmatch(joint, pattern.replace(".", "*") + "*"):
+                    if pattern in default_vel:
+                        default_vel_inorder.append(default_vel[pattern])
+                    else:
+                        default_vel_inorder.append(0)
+                        self.get_logger().warn(f"{joint} default position not found, setting to 0")
+                    break
 
     act_list = data.get("actions")
     [[actions.append(a) for a in act_list.get(act).get("joint_names")] for act in act_list]
 
+    self.get_logger().info(f"Num Joints: {len(joint_names)}")
+    self.get_logger().info(f"Num Actions: {len(actions)}")
     return (
         effort_limits_inorder,
         velocity_limits_inorder,
@@ -226,23 +198,9 @@ def get_robot_joint_properties(
         joint_names,
         actions,
     )
+'''
 
-
-def get_physics_properties(data: dict) -> dict:
-    """
-    Gets the physics properties from the environment configuration data.
-
-    Args:
-        data (dict): The environment configuration data.
-
-    Returns:
-        tuple: A tuple containing the decimation, dt, and render interval.
-    """
-    return data.get("decimation"), data.get("sim").get("dt"), data.get("sim").get("render_interval")
-
-
-def expand_fnmatch(pattern: str) -> list[str]:
-
+"""def expand_fnmatch(self, pattern: str) -> list[str]:
     # Find character ranges like [1-7]
     ranges = re.findall(r"\[([^\]]+)\]", pattern)
     if not ranges:
@@ -270,3 +228,92 @@ def expand_fnmatch(pattern: str) -> list[str]:
         all_combinations.append(s)
 
     return all_combinations
+"""
+
+'''
+def map_joint_angle(self, pos: float, index: int) -> float:
+    """
+    Map a simulation joint angle (in radians) to the real-world servo angle (in radians).
+
+    Args:
+        pos: Joint angle from simulation (in radians).
+        index: Index of the joint.
+
+    Returns:
+        Mapped joint angle within the servo limits.
+    """
+    L, U, inversed = self.SIM_DOF_ANGLE_LIMITS[index]
+    A, B = self.SERVO_ANGLE_LIMITS[index]
+    angle_deg = np.rad2deg(float(pos))
+    # Check if the simulation angle is within limits
+    if not L <= angle_deg <= U:
+        self.get_logger().warn(f"Simulation joint {index} angle ({angle_deg}) out of range [{L}, {U}]. Clipping.")
+        angle_deg = np.clip(angle_deg, L, U)
+    # Map the angle from the simulation range to the servo range
+    mapped = (angle_deg - L) * ((B - A) / (U - L)) + A
+    if inversed:
+        mapped = (B - A) - (mapped - A) + A
+    # Verify the mapped angle is within servo limits
+    if not A <= mapped <= B:
+        raise Exception(f"Mapped joint {index} angle ({mapped}) out of servo range [{A}, {B}].")
+    return mapped
+'''
+
+'''
+def parse_env_config(self, env_config_path: str = "env.yaml") -> dict:
+    """
+    Parses the environment configuration file from a local path or an Omniverse URL.
+
+    Args:
+        env_config_path (str, optional): The path to the environment configuration file. Can be local or an Omniverse URL.
+
+    Returns:
+        dict: The parsed environment configuration data.
+    """
+
+    class SafeLoaderIgnoreUnknown(yaml.SafeLoader):
+        def ignore_unknown(self, node) -> None:
+            return None
+
+        def tuple_constructor(loader, node) -> tuple:
+            return tuple(loader.construct_sequence(node))
+
+    SafeLoaderIgnoreUnknown.add_constructor(
+        "tag:yaml.org,2002:python/tuple", SafeLoaderIgnoreUnknown.tuple_constructor
+    )
+    SafeLoaderIgnoreUnknown.add_constructor(None, SafeLoaderIgnoreUnknown.ignore_unknown)
+
+    with open(env_config_path, "rb") as f:
+        file = io.BytesIO(f.read())
+
+    data = yaml.load(file, Loader=SafeLoaderIgnoreUnknown)
+    return data
+'''
+
+"""
+(
+    self._max_effort,
+    self._max_vel,
+    self._stiffness,
+    self._damping,
+    self.default_pos,
+    self.default_vel,
+    self.sim_joint_names,
+    self.actions,
+) = self.get_robot_joint_properties(self.policy_env_params)
+"""
+
+'''
+# Debug Logging (commented out)
+"""print("\n=== Policy Step ===")
+print(f"{'Command:':<20} {np.round(command, 4)}\n")
+print("--- Observation ---")
+print(f"{'Δ Joint Positions:':<20} {np.round(obs[:6], 4)}")
+print(f"{'Joint Velocities:':<20} {np.round(obs[6:12], 4)}")
+print(f"{'Command:':<20} {np.round(obs[12:19], 4)}")
+print(f"{'Previous Action:':<20} {np.round(obs[19:25], 4)}\n")
+print("--- Action ---")
+print(f"{'Raw Action:':<20} {np.round(self.action, 4)}")"""
+processed_action = self.default_pos[: self.num_actions] + (self.action * self._action_scale)  # TODO fix this
+# print(f"{'Processed Action:':<20} {np.round(processed_action, 4)}")
+# '''

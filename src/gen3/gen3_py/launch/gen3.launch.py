@@ -14,6 +14,8 @@ from launch.actions import (
     OpaqueFunction,
 )
 
+from launch_ros.actions import Node
+
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     LaunchConfiguration,
@@ -25,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
+    pkg_gen3_py = get_package_share_directory("gen3_py")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
@@ -40,8 +43,14 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
+    ee_publisher = Node(
+        package="gen3_py",
+        executable="ee_pub",
+    )
+
     nodes_to_launch = [
         kinova_arm_launch,
+        # ee_publisher
     ]
 
     return nodes_to_launch

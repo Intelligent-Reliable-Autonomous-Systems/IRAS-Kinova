@@ -18,6 +18,8 @@ import numpy as np
 import os
 import rclpy
 from rcl_interfaces.msg import SetParametersResult
+from visualization_msgs.msg import Marker
+import tf_transformations
 
 from gen3_controllers.policy_controller import PolicyController
 
@@ -25,32 +27,30 @@ from gen3_controllers.policy_controller import PolicyController
 class Gen3ReachPolicy(PolicyController):
     """Policy controller for Gen3 Reach using a pre-trained policy model."""
 
+    targ_cmd_len = 7  # XYZ RPY + gripper open/close
+    isaac_oc = np.array([-1.0, 1.0])  # min/max for gripper open close in IsaacSim
+    gen3_oc = np.array([0, 0.8])  # min/max for gripper open/close in Gen3 hardware
+    _action_scale = 0.5
+
     def __init__(self) -> None:
         """Initialize the URReachPolicy instance."""
         super().__init__("Gen3ReachPolicy")
 
-        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/pretrained_models/reach4")
-        self.declare_parameter("action_scale", 0.5)
+        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach")
         self.declare_parameter("target_pos", [0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
+        # self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
         self.model_path = self.get_parameter("model_path").value
-        self._action_scale = self.get_parameter("action_scale").value
         target_pos = self.get_parameter("target_pos").value
 
         self.load_policy(f"{self.model_path}/policy.pt", f"{self.model_path}/env.yaml")
 
         self.target_pos = np.array(list(target_pos))
-        self.targ_cmd_len = 7  # XYZ RPY + gripper open/close
-        self.num_arm_joints = 7  # TODO fix this
-        self.num_gripper_joints = 6
-        self.has_joint_data = False
-
         self._previous_action = np.zeros(self.num_actions)
-        self.current_arm_joint_positions = np.zeros(self.num_arm_joints)
-        self.current_arm_joint_velocities = np.zeros(self.num_arm_joints)
-        self.current_gripper_joint_positions = np.zeros(self.num_gripper_joints)
-        self.current_gripper_joint_velocities = np.zeros(self.num_gripper_joints)
 
         self.add_on_set_parameters_callback(self.param_callback)
+
+        self.timer = self.create_timer(self.step_size, self.target_pub_callback)
+        self.marker_pub = self.create_publisher(Marker, "target_point", 10)
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:
         """
@@ -65,14 +65,14 @@ class Gen3ReachPolicy(PolicyController):
         """
         if not self.has_joint_data:
             return None
+        if not self.has_default_pos:
+            return None
 
         obs = np.zeros(2 * self.num_joints + self.targ_cmd_len + self.num_actions)
-        obs[: self.num_joints] = (
-            np.concatenate((self.current_arm_joint_positions, self.current_gripper_joint_positions)) - self.default_pos
-        )
-        obs[self.num_joints : 2 * self.num_joints] = np.concatenate(
-            (self.current_arm_joint_velocities, self.current_gripper_joint_velocities)
-        )
+        obs[: self.num_joints] = self.current_joint_positions - self.default_pos
+
+        obs[self.num_joints : 2 * self.num_joints] = self.current_joint_velocities - self.default_pos
+
         obs[2 * self.num_joints : 2 * self.num_joints + self.targ_cmd_len] = command
         obs[2 * self.num_joints + self.targ_cmd_len :] = self._previous_action
 
@@ -89,6 +89,7 @@ class Gen3ReachPolicy(PolicyController):
         Returns:
             The computed joint positions if joint data is available, otherwise None.
         """
+        joint_pos = np.zeros(self.num_actions)
         if not self.has_joint_data:
             return None
 
@@ -98,22 +99,45 @@ class Gen3ReachPolicy(PolicyController):
         self.action = self._compute_action(obs)
         self._previous_action = self.action.copy()
 
-        # Debug Logging (commented out)
-        """print("\n=== Policy Step ===")
-        print(f"{'Command:':<20} {np.round(command, 4)}\n")
-        print("--- Observation ---")
-        print(f"{'Δ Joint Positions:':<20} {np.round(obs[:6], 4)}")
-        print(f"{'Joint Velocities:':<20} {np.round(obs[6:12], 4)}")
-        print(f"{'Command:':<20} {np.round(obs[12:19], 4)}")
-        print(f"{'Previous Action:':<20} {np.round(obs[19:25], 4)}\n")
-        print("--- Action ---")
-        print(f"{'Raw Action:':<20} {np.round(self.action, 4)}")"""
-        processed_action = self.default_pos[: self.num_actions] + (self.action * self._action_scale)  # TODO fix this
-        # print(f"{'Processed Action:':<20} {np.round(processed_action, 4)}")
+        joint_pos[: len(self.arm_actions)] = self.default_pos[: len(self.arm_actions)] + (
+            self.action[: len(self.arm_actions)] * self._action_scale
+        )
 
-        joint_positions = self.default_pos[: self.num_actions] + (self.action * self._action_scale)  # TODO fix this
+        joint_pos[-1] = ((self.action[-1] - self.isaac_oc[0]) / (self.isaac_oc[1] - self.isaac_oc[0])) * (
+            self.gen3_oc[1] - self.gen3_oc[0]
+        ) + self.gen3_oc[0]
 
-        return joint_positions
+        return joint_pos
+
+    def target_pub_callback(self) -> None:
+        """
+        Publish the target position to rviz
+        """
+        q = tf_transformations.quaternion_from_euler(self.target_pos[3], self.target_pos[4], self.target_pos[5])
+        marker = Marker()
+        marker.header.frame_id = "base_link"
+        marker.type = Marker.ARROW
+        marker.action = Marker.ADD
+
+        marker.scale.x = 0.05
+        marker.scale.y = 0.05
+        marker.scale.z = 0.05
+
+        marker.color.r = 1.0
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        marker.color.a = 1.0
+
+        marker.pose.position.x = self.target_pos[0]
+        marker.pose.position.y = self.target_pos[1]
+        marker.pose.position.z = self.target_pos[2]
+
+        marker.pose.orientation.x = q[0]
+        marker.pose.orientation.y = q[1]
+        marker.pose.orientation.z = q[2]
+        marker.pose.orientation.w = q[3]
+
+        self.marker_pub.publish(marker)
 
     def param_callback(self, params):
         for param in params:
