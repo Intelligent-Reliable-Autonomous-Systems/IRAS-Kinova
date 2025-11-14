@@ -83,8 +83,8 @@ class PolicyController(Node):
         if not self.has_default_pos:
             self.default_pos = np.array(position[: self.num_joints], dtype=np.float32)
             self.has_default_pos = True
-
         self.current_joint_positions = np.array(position[: self.num_joints], dtype=np.float32)
+        
         self.current_joint_velocities = np.array(velocity[: self.num_joints], dtype=np.float32)
         self.has_joint_data = True
 

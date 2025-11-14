@@ -17,7 +17,7 @@ public:
     : Node("kinova_reset_node")
     {
         // Declare parameters with defaults
-        this->declare_parameter<std::vector<double>>("joint_positions", {0.0,0.0,0.0,0.0,0.0,0.0,0.0});
+        this->declare_parameter<std::vector<double>>("joint_positions", {0.0,0.523599,0.0,1.5708,0.0,0.785398,0.0});
         this->declare_parameter<double>("move_time", 2.0); // seconds
 
         // Get parameters

@@ -36,7 +36,7 @@ class Gen3ReachPolicy(PolicyController):
         """Initialize the URReachPolicy instance."""
         super().__init__("Gen3ReachPolicy")
 
-        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach")
+        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach2")
         #self.declare_parameter("target_pos", [0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
         self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
         self.model_path = self.get_parameter("model_path").value
@@ -69,6 +69,7 @@ class Gen3ReachPolicy(PolicyController):
             return None
 
         obs = np.zeros(2 * self.num_joints + self.targ_cmd_len + self.num_actions)
+        print(self.current_joint_positions)
         obs[: self.num_joints] = self.current_joint_positions - self.default_pos
 
         obs[self.num_joints : 2 * self.num_joints] = self.current_joint_velocities
