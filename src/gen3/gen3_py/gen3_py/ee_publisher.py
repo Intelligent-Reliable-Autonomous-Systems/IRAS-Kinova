@@ -16,7 +16,7 @@ class EEPositionPublisher(Node):
 
         # Change to your frames!
         self.base_frame = "base_link"
-        self.ee_frame = "gripper_base_link"  # e.g. "gripper_link", "end_effector_link"
+        self.ee_frame = "bracelet_link" 
         self.ready = False
 
     def timer_callback(self):

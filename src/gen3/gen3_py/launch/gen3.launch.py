@@ -50,7 +50,7 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
-        # ee_publisher
+        ee_publisher
     ]
 
     return nodes_to_launch
