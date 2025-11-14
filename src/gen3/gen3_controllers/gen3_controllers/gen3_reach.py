@@ -69,7 +69,7 @@ class Gen3ReachPolicy(PolicyController):
             return None
 
         obs = np.zeros(2 * self.num_joints + self.targ_cmd_len + self.num_actions)
-        print(self.current_joint_positions)
+
         obs[: self.num_joints] = self.current_joint_positions - self.default_pos
 
         obs[self.num_joints : 2 * self.num_joints] = self.current_joint_velocities
