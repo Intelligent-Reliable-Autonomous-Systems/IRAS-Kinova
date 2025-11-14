@@ -10,11 +10,11 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 
-add_executable(kinova_reset src/kinova_reset.cpp)
-ament_target_dependencies(kinova_reset rclcpp trajectory_msgs)
+add_executable(gen3_reset src/gen3_reset.cpp)
+ament_target_dependencies(gen3_reset rclcpp trajectory_msgs)
 
 install(TARGETS
-  kinova_reset
+  gen3_reset
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

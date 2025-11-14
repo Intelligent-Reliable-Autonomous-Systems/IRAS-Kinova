@@ -1,10 +1,21 @@
 # IRAS-Kinova
 Kinova Kortex Gen3 arm package for IRAS lab
 
+## Setting up robot with new laptop
+
+1. Connect robot ethernet cable to computer ethernet port
+2. Open Settings -> Network -> Wired Connection -> Properties 
+3. Select IPv4. Set IP address to 192.168.8.XX where XX > 10. Set Netmask to 255.255.255.0. Hit apply.
+4. Unplug/replug ethernet cable from computer.
+5. Open browser to 192.168.8.10 (Gen3 IPv4 address). This opens the Kinova WebApp. Username/password is admin/admin.
+6. See [Kinova Reference Guide](https://www.kinovarobotics.com/uploads/User-Guide-Gen3-R07.pdf) for more information.
+
 ## Installation Instructions
 
 1. Install ROS2 Jazzy
     Latest LTS Release: [Install ROS2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
+    Install rosdep and colcon 
+    Recommend installing to global (not in venv)
 
 2. Clone this repository: 
     ```git@github.com:Intelligent-Reliable-Autonomous-Systems/IRAS-Kinova.git```
@@ -15,13 +26,6 @@ Kinova Kortex Gen3 arm package for IRAS lab
     git clone https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex
     vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex.jazzy.repos
     vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex-not-released.jazzy.repos
-    ```
-
-    Note: may need to install gazebo-sim manually:
-
-    ```
-    sudo apt update && sudo apt update
-    sudo apt install ros-jazzy-ros-gz
     ```
 
 4. Rename folder that was just created to ros2_kortex:
@@ -63,7 +67,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
     joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
     points: [
-        { positions: [0, 0, 0, 0, 2, 0, 0], time_from_start: { sec: 1 } },
+        { positions: [0, 0.523599, 0, 1.5708, 0, .785398, 0], time_from_start: { sec: 5 } },
     ]
     }" -1
     ```
@@ -71,7 +75,8 @@ Kinova Kortex Gen3 arm package for IRAS lab
 3. Try resetting the robot
 
     ```
-    ros2 run gen3_cpp gen3_reset --ros-args -p move_time:=5
+    ros2 run gen3_cpp gen3_reset --ros-args -p move_time:=5.0
+    ```
 
 
 ## Testing Sim to Real with a Reach Policy
@@ -80,11 +85,11 @@ Kinova Kortex Gen3 arm package for IRAS lab
 1. Launch the robot in rviz
 
     ```
-    ros2 launch kinova kinova.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
 2. Launch the policy
 
     ```
-    python3 sim2real/scripts/sim2real/run_task_reach.py
+    ros2 run gen3_controllers gen3_reach
     ```
