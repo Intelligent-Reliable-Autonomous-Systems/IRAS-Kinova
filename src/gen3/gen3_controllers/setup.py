@@ -22,6 +22,7 @@ setup(
         ],
     },
     entry_points={
-        "console_scripts": ["gen3_reach = gen3_controllers.gen3_reach:main"],
+        "console_scripts": ["gen3_reach = gen3_controllers.gen3_reach:main",
+                            "gen3_reach_isaac = gen3_controllers.isaac.gen3_reach_isaac:main"],
     },
 )

@@ -93,3 +93,13 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ```
     ros2 run gen3_controllers gen3_reach
     ```
+
+## Testing Sim to IsaacSim
+
+1. Launch the robot from the Isaac-Kinova Repository (see instructions)
+
+2. Launch the policy
+
+    ```
+    ros2 run gen3_controllers gen3_reach_isaac
+    ```
