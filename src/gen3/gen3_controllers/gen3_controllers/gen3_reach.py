@@ -38,7 +38,8 @@ class Gen3ReachPolicy(PolicyController):
 
         self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach2")
         #self.declare_parameter("target_pos", [0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
-        self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
+        #self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
+        self.declare_parameter("target_pos", [5.6887972e-01, -6.9432750e-02,  2.6019663e-01, -4.3215657e-08, -1.5017825e-01,  9.8865896e-01, -6.5645001e-09])
         self.model_path = self.get_parameter("model_path").value
         target_pos = self.get_parameter("target_pos").value
 
@@ -51,6 +52,7 @@ class Gen3ReachPolicy(PolicyController):
 
         self.timer = self.create_timer(self.step_size, self.target_pub_callback)
         self.marker_pub = self.create_publisher(Marker, "target_point", 10)
+        self.i = 0
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:
         """
@@ -97,6 +99,14 @@ class Gen3ReachPolicy(PolicyController):
         obs = self._compute_observation(command)
         if obs is None:
             return None
+        if self.i < 10:
+            print(f"### OBS {self.i} """)
+            print(f"Posi: {obs[:8]}")
+            print(f"Velo: {obs[8:16]}")
+            print(f"Targ: {obs[16:23]}")
+            print(f"PAct: {obs[23:]}")
+            print('\n')
+        self.i += 1
         self.action = self._compute_action(obs)
         self._previous_action = self.action.copy()
 

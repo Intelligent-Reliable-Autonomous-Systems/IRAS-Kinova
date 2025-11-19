@@ -72,6 +72,20 @@ class PolicyController(Node):
         """
         self.update_joint_state(msg.position, msg.velocity)
 
+    def sub_callback(self, msg: JointTrajectoryControllerState):
+        """
+        Callback for receiving controller state messages.
+        Updates the current joint positions and passes the state to the robot model.
+        """
+        actual_pos = {}
+        for i, joint_name in enumerate(msg.joint_names):
+            joint_pos = msg.actual.positions[i]
+            actual_pos[joint_name] = joint_pos
+        self.current_pos = actual_pos
+        
+        # Update the robot's state with current joint positions and velocities.
+        self.update_joint_state(msg.actual.positions, msg.actual.velocities)
+
     def update_joint_state(self, position: np.ndarray, velocity: np.ndarray) -> None:
         """
         Update the current joint state.
