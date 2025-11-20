@@ -23,6 +23,8 @@ setup(
     },
     entry_points={
         "console_scripts": ["gen3_reach = gen3_controllers.gen3_reach:main",
-                            "gen3_reach_isaac = gen3_controllers.isaac.gen3_reach_isaac:main"],
+                            "gen3_reach_isaac = gen3_controllers.isaac.gen3_reach_isaac:main",
+                            "gen3_reach_nogripper = gen3_controllers.no_gripper.gen3_reach_nogripper:main"],
+
     },
 )

@@ -21,24 +21,25 @@ from rcl_interfaces.msg import SetParametersResult
 from visualization_msgs.msg import Marker
 import tf_transformations
 
-from gen3_controllers.isaac.policy_controller_isaac import IsaacPolicyController
+from gen3_controllers.no_gripper.policy_controller_nogripper import NoGripperPolicyController
 
 
-class Gen3ReachPolicy(IsaacPolicyController):
+class Gen3ReachPolicy(NoGripperPolicyController):
     """Policy controller for Gen3 Reach using a pre-trained policy model."""
 
     targ_cmd_len = 7  # XYZ RPY + gripper open/close
     isaac_oc = np.array([-1.0, 1.0])  # min/max for gripper open close in IsaacSim
-    gen3_oc = np.array([-1.0, 1.0])  # min/max for gripper open/close in IsaacSim
+    gen3_oc = np.array([0, 0.8])  # min/max for gripper open/close in Gen3 hardware
     _action_scale = 0.5
 
     def __init__(self) -> None:
         """Initialize the URReachPolicy instance."""
         super().__init__("Gen3ReachPolicy")
 
-        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/gripper")
+        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/no_gripper")
         #self.declare_parameter("target_pos", [0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
         self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
+        #self.declare_parameter("target_pos", [5.6887972e-01, -6.9432750e-02,  2.6019663e-01, -4.3215657e-08, -1.5017825e-01,  9.8865896e-01, -6.5645001e-09])
         self.model_path = self.get_parameter("model_path").value
         target_pos = self.get_parameter("target_pos").value
 
@@ -51,6 +52,7 @@ class Gen3ReachPolicy(IsaacPolicyController):
 
         self.timer = self.create_timer(self.step_size, self.target_pub_callback)
         self.marker_pub = self.create_publisher(Marker, "target_point", 10)
+        self.i = 0
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:
         """
@@ -97,6 +99,14 @@ class Gen3ReachPolicy(IsaacPolicyController):
         obs = self._compute_observation(command)
         if obs is None:
             return None
+        if self.i < 10:
+            print(f"### OBS {self.i} """)
+            print(f"Posi: {obs[:8]}")
+            print(f"Velo: {obs[8:16]}")
+            print(f"Targ: {obs[16:23]}")
+            print(f"PAct: {obs[23:]}")
+            print('\n')
+        self.i += 1
         self.action = self._compute_action(obs)
         self._previous_action = self.action.copy()
 

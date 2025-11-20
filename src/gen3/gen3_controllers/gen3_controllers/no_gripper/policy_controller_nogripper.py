@@ -40,16 +40,13 @@ from rclpy.action import ActionClient
 from control_msgs.action import GripperCommand
 
 
-class PolicyController(Node):
+class NoGripperPolicyController(Node):
     """A controller that loads and executes a policy from a file as a ROS2 node"""
 
-    current_joint_positions = None
-    current_joint_velocities = None
-    
     def __init__(self, name) -> None:
         super().__init__(name)
 
-        self.declare_parameter("state_topic", "/joint_states")
+        self.declare_parameter("state_topic", "/joint_trajectory_controller/controller_state")
         self.declare_parameter("cmd_topic", "/joint_trajectory_controller/joint_trajectory")
         self.declare_parameter("min_traj_dur", 1.0)
         self.declare_parameter("step_size", 0.02)
@@ -58,24 +55,23 @@ class PolicyController(Node):
         self.min_traj_dur = self.get_parameter("min_traj_dur").value
         self.step_size = self.get_parameter("step_size").value
 
-        self.create_subscription(JointState, self.state_topic, self.robot_state_callback, 10)
+        self.create_subscription(JointTrajectoryControllerState, self.state_topic, self.robot_state_callback, 10)
 
         self.traj_pub = self.create_publisher(JointTrajectory, self.cmd_topic, 10)
         self.timer = self.create_timer(self.step_size, self.robot_cmd_callback)
-        self.gripper_action_client = ActionClient(self, GripperCommand, "/robotiq_gripper_controller/gripper_cmd")
 
         self.get_logger().info(f"Initialized {name} policy controller")
         self.has_joint_data = False
         self.has_default_pos = False
 
-        self.j = 0
-
-    def robot_state_callback(self, msg: JointState):
+    def robot_state_callback(self, msg: JointTrajectoryControllerState):
         """
         Callback for receiving controller state messages.
         Updates the current joint positions and passes the state to the robot model.
         """
-        self.update_joint_state(msg.position, msg.velocity)
+
+        # Update the robot's state with current joint positions and velocities.
+        self.update_joint_state(msg.feedback.positions, msg.feedback.velocities)
 
     def update_joint_state(self, position: np.ndarray, velocity: np.ndarray) -> None:
         """
@@ -88,11 +84,9 @@ class PolicyController(Node):
         if not self.has_default_pos:
             self.default_pos = np.array(position[: self.num_joints], dtype=np.float32)
             self.has_default_pos = True
-        
-
-        self.current_joint_velocities = np.zeros(self.num_joints) if self.current_joint_positions is None else np.array(position[: self.num_joints], dtype=np.float32) - self.current_joint_positions
         self.current_joint_positions = np.array(position[: self.num_joints], dtype=np.float32)
         
+        self.current_joint_velocities = np.array(velocity[: self.num_joints], dtype=np.float32)
         self.has_joint_data = True
 
     def robot_cmd_callback(self) -> None:
@@ -108,51 +102,18 @@ class PolicyController(Node):
             if len(joint_pos) != self.num_actions:
                 self.get_logger().error(f"Expected {self.num_actions} joint positions, got {len(joint_pos)}!")
             else:
-                self.j += 1
-                if self.j < 2:
+                traj = JointTrajectory()
+                traj.joint_names = self.arm_joints
 
-                    traj = JointTrajectory()
-                    traj.joint_names = self.arm_joints
+                point = JointTrajectoryPoint()
+                point.positions = joint_pos.tolist()[: len(self.arm_actions)]
+                point.time_from_start = Duration(sec=1, nanosec=0)
 
-                    point = JointTrajectoryPoint()
-                    point.positions = joint_pos.tolist()[: len(self.arm_actions)]
-                    point.time_from_start = Duration(sec=1, nanosec=0)
-
-                    traj.points.append(point)
-                    self.traj_pub.publish(traj)
-                    self.send_gripper_goal(position=joint_pos[-1])
+                traj.points.append(point)
+                self.traj_pub.publish(traj)
         else:
             pass
             # self.get_logger().info("Joint positions are `None`")
-
-    def send_gripper_goal(self, position: float = 0.0, max_effort: float = 100.0) -> None:
-        """
-        Send position goal to the gripper
-        """
-        self.gripper_action_client.wait_for_server()
-
-        goal_msg = GripperCommand.Goal()
-        goal_msg.command.position = position
-        goal_msg.command.max_effort = max_effort
-
-        send_goal_future = self.gripper_action_client.send_goal_async(
-            goal_msg, feedback_callback=self.feedback_callback
-        )
-        send_goal_future.add_done_callback(self.goal_response_callback)
-
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            return
-
-        get_result_future = goal_handle.get_result_async()
-        get_result_future.add_done_callback(self.get_result_callback)
-
-    def get_result_callback(self, future):
-        result = future.result().result
 
     def load_policy(self, policy_file_path: str, policy_env_path: str) -> bool:
         """
@@ -186,8 +147,8 @@ class PolicyController(Node):
             self.get_joint_properties(self.policy_env_params)
         )
 
-        self.num_joints = len(self.arm_joints) + len(self.gripper_joints)
-        self.num_actions = len(self.arm_actions) + len(self.gripper_actions)
+        self.num_joints = len(self.arm_joints)
+        self.num_actions = len(self.arm_actions)
 
         self.get_logger().info(f"{'Number of joints:':<18} {self.num_joints}")
         self.get_logger().info(f"{'Number of actions:':<18} {self.num_actions}")
@@ -206,16 +167,14 @@ class PolicyController(Node):
         actions = data["actions"]
 
         arm_joints = joints["arm"]["joint_names"]
-        gripper_joints = joints["gripper"]["joint_names"]
 
         arm_actions = actions["arm_action"]["joint_names"]
-        gripper_actions = actions["gripper_action"]["joint_names"]
 
         if "default_pos" in data.keys():
             default_pos = np.array(list(data["default_pos"].values()))
             self.has_default_pos = True
 
-        return arm_joints, gripper_joints, arm_actions, gripper_actions, default_pos
+        return arm_joints, None, arm_actions, None, default_pos
 
     def _compute_action(self, obs: np.ndarray) -> np.ndarray:
         """

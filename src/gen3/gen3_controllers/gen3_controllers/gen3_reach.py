@@ -30,16 +30,16 @@ class Gen3ReachPolicy(PolicyController):
     targ_cmd_len = 7  # XYZ RPY + gripper open/close
     isaac_oc = np.array([-1.0, 1.0])  # min/max for gripper open close in IsaacSim
     gen3_oc = np.array([0, 0.8])  # min/max for gripper open/close in Gen3 hardware
-    _action_scale = 0.5
+    _action_scale = 1.0
 
     def __init__(self) -> None:
         """Initialize the URReachPolicy instance."""
         super().__init__("Gen3ReachPolicy")
 
-        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach2")
+        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/no_vel")
         #self.declare_parameter("target_pos", [0.5, 0.0, 0.2, 0.7071, 0.0, 0.7071, 0.0])
-        #self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
-        self.declare_parameter("target_pos", [5.6887972e-01, -6.9432750e-02,  2.6019663e-01, -4.3215657e-08, -1.5017825e-01,  9.8865896e-01, -6.5645001e-09])
+        self.declare_parameter("target_pos",[5.6887972e-01 ,-6.9432750e-02,  2.6019663e-01, -4.3215657e-08, -1.5017825e-01,  9.8865896e-01, -6.5645001e-09])
+        #self.declare_parameter("target_pos",[1.031011,0.51262975, 0.5378447, 0.7847674, 3.1146033, 0.70821935, 0.25055423])
         self.model_path = self.get_parameter("model_path").value
         target_pos = self.get_parameter("target_pos").value
 
@@ -70,14 +70,18 @@ class Gen3ReachPolicy(PolicyController):
         if not self.has_default_pos:
             return None
 
-        obs = np.zeros(2 * self.num_joints + self.targ_cmd_len + self.num_actions)
+        #obs = np.zeros(2 * self.num_joints + self.targ_cmd_len + self.num_actions)
+        obs = np.zeros(self.num_joints + self.targ_cmd_len + self.num_actions)
 
         obs[: self.num_joints] = self.current_joint_positions - self.default_pos
 
-        obs[self.num_joints : 2 * self.num_joints] = self.current_joint_velocities
+        #obs[self.num_joints : 2 * self.num_joints] = self.current_joint_velocities
 
-        obs[2 * self.num_joints : 2 * self.num_joints + self.targ_cmd_len] = command
-        obs[2 * self.num_joints + self.targ_cmd_len :] = self._previous_action
+        #obs[2 * self.num_joints : 2 * self.num_joints + self.targ_cmd_len] = command
+        #obs[2 * self.num_joints + self.targ_cmd_len :] = self._previous_action
+        obs[self.num_joints : self.num_joints + self.targ_cmd_len] = command
+        obs[self.num_joints + self.targ_cmd_len :] = self._previous_action
+
 
         return obs
 
@@ -99,12 +103,12 @@ class Gen3ReachPolicy(PolicyController):
         obs = self._compute_observation(command)
         if obs is None:
             return None
-        if self.i < 10:
+        if self.i < 2:
+            pass
             print(f"### OBS {self.i} """)
             print(f"Posi: {obs[:8]}")
-            print(f"Velo: {obs[8:16]}")
-            print(f"Targ: {obs[16:23]}")
-            print(f"PAct: {obs[23:]}")
+            print(f"Targ: {obs[8:15]}")
+            print(f"PAct: {obs[15:]}")
             print('\n')
         self.i += 1
         self.action = self._compute_action(obs)
@@ -117,6 +121,7 @@ class Gen3ReachPolicy(PolicyController):
         joint_pos[-1] = ((self.action[-1] - self.isaac_oc[0]) / (self.isaac_oc[1] - self.isaac_oc[0])) * (
             self.gen3_oc[1] - self.gen3_oc[0]
         ) + self.gen3_oc[0]
+
 
         return joint_pos
 
