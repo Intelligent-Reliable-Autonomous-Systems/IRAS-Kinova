@@ -1,5 +1,24 @@
-### Note from Will - IRAS lab
+### Template for env.yaml configuration
 
-This is a good template for us to start with in terms of how to load a .pt policy trained in IsaacSim
+This template uses the arm and gripper in the actuator label for observations while the actions label is used for actions. The default position is useful if the robot is operating from an offset.
 
-However I think there is a lot of work to do to make it better and more general. Let's think about this! 
+
+```
+actuators:
+  arm:
+    joint_names:
+      - joint 
+  gripper:
+    joint_names:
+      - joint
+actions:
+  arm_action:
+    joint_names:
+      -joint 
+  gripper_action:
+    joint_names:
+      - joint
+default_pos:
+  joint_1: 0.0
+```
+

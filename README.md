@@ -85,6 +85,13 @@ Kinova Kortex Gen3 arm package for IRAS lab
         { positions: [-0.00345383, 0.26835734, -0.00539355, 0.8442715, 0.0048868, 0.77871652, 0.0038844], time_from_start: { sec: 2 } },
     ]
     }" -1
+
+    ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
+    joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
+    points: [
+        { positions: [0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0], time_from_start: { sec: 2 } },
+    ]
+    }" -1
     
 
 
