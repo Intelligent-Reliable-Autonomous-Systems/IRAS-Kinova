@@ -68,8 +68,6 @@ class PolicyController(Node):
         self.has_joint_data = False
         self.has_default_pos = False
 
-        self.j = 0
-
     def robot_state_callback(self, msg: JointState):
         """
         Callback for receiving controller state messages.
@@ -88,11 +86,9 @@ class PolicyController(Node):
         if not self.has_default_pos:
             self.default_pos = np.array(position[: self.num_joints], dtype=np.float32)
             self.has_default_pos = True
-        
-
-        self.current_joint_velocities = np.zeros(self.num_joints) if self.current_joint_positions is None else np.array(position[: self.num_joints], dtype=np.float32) - self.current_joint_positions
         self.current_joint_positions = np.array(position[: self.num_joints], dtype=np.float32)
         
+        self.current_joint_velocities = np.array(velocity[: self.num_joints], dtype=np.float32)
         self.has_joint_data = True
 
     def robot_cmd_callback(self) -> None:
@@ -108,19 +104,16 @@ class PolicyController(Node):
             if len(joint_pos) != self.num_actions:
                 self.get_logger().error(f"Expected {self.num_actions} joint positions, got {len(joint_pos)}!")
             else:
-                self.j += 1
-                if self.j < 2:
+                traj = JointTrajectory()
+                traj.joint_names = self.arm_joints
 
-                    traj = JointTrajectory()
-                    traj.joint_names = self.arm_joints
+                point = JointTrajectoryPoint()
+                point.positions = joint_pos.tolist()[: len(self.arm_actions)]
+                point.time_from_start = Duration(sec=1, nanosec=0)
 
-                    point = JointTrajectoryPoint()
-                    point.positions = joint_pos.tolist()[: len(self.arm_actions)]
-                    point.time_from_start = Duration(sec=1, nanosec=0)
-
-                    traj.points.append(point)
-                    self.traj_pub.publish(traj)
-                    self.send_gripper_goal(position=joint_pos[-1])
+                traj.points.append(point)
+                self.traj_pub.publish(traj)
+                self.send_gripper_goal(position=joint_pos[-1])
         else:
             pass
             # self.get_logger().info("Joint positions are `None`")
