@@ -23,15 +23,14 @@ Kinova Kortex Gen3 arm package for IRAS lab
 3. Navigate to `src/` and clone the ros2_kortex package:
 
     ```
-    git clone https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex
+    git clone https://github.com/Kinovarobotics/ros2_kortex.git
     vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex.jazzy.repos
     vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex-not-released.jazzy.repos
     ```
 
-4. Rename folder that was just created to ros2_kortex:
-
+4. Clone the ros2_kortex_vision package:
     ```
-    mv src/ ros2_kortex
+    git clone https://github.com/Kinovarobotics/ros2_kortex_vision.git
     ```
 
 5. Navigate to IRAS-Kinova/ folder and Source the ROS2 installation 
@@ -71,21 +70,6 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ]
     }" -1
     ```
-
-    ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
-    joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
-    points: [
-        { positions: [-0.00345383, -0.25524166, -0.00539355, -0.7265285, 0.0048868, -0.00668148, 0.0038844], time_from_start: { sec: 2 } },
-    ]
-    }" -1
-
-    ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
-    joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
-    points: [
-        { positions: [-0.00345383, 0.26835734, -0.00539355, 0.8442715, 0.0048868, 0.77871652, 0.0038844], time_from_start: { sec: 2 } },
-    ]
-    }" -1
-
     ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
     joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
     points: [
@@ -94,9 +78,6 @@ Kinova Kortex Gen3 arm package for IRAS lab
     }" -1
     
 
-
-
-
 3. Try resetting the robot
 
     ```
@@ -104,13 +85,13 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ```
 
 
-## Testing Sim to Real with a Reach Policy
+## Testing Sim to Sim with a Reach Policy
 
 
 1. Launch the robot in rviz
 
     ```
-    ros2 launch gen3_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.10.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
 2. Launch the policy
@@ -118,6 +99,14 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ```
     ros2 run gen3_controllers gen3_reach
     ```
+## Testing Sim to Real with a Reach Policy
+
+1. Launch the robot hardware
+
+    ```
+    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.8.10 use_fake_hardware:=false gripper:=robotiq_2f_85
+    ```
+
 
 ## Testing Sim to IsaacSim
 

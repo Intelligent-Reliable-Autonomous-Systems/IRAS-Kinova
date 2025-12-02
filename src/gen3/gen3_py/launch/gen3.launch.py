@@ -27,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
+    pkg_kortex_vision = get_package_share_directory("kinova_vision")
     pkg_gen3_py = get_package_share_directory("gen3_py")
 
     # Variables
@@ -43,6 +44,13 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
+    kinova_vision_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_vision, "launch", "kinova_vision.launch.py"])),
+        launch_arguments={
+            "device": robot_ip,
+        }.items(),
+    )
+
     ee_publisher = Node(
         package="gen3_py",
         executable="ee_pub",
@@ -50,6 +58,7 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
+        kinova_vision_launch,
         ee_publisher
     ]
 
@@ -74,6 +83,14 @@ def generate_launch_description():
             "robot_ip",
             default_value="yyy.yyy.yyy.yyy",
             description="ip of robot",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "vision",
+            default_value="true",
+            description="If to load vision topics",
         )
     )
 
