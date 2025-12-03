@@ -57,7 +57,7 @@ Kinova Kortex Gen3 arm package for IRAS lab
 1. Launch the robot in rviz
 
     ```
-    ros2 launch gen3_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=yyy.yyy.yyy.yyy use_fake_hardware:=true gripper:=robotiq_2f_85 vision:=false
     ```
 
 2. Send a trajectory command to the robot
@@ -76,6 +76,11 @@ Kinova Kortex Gen3 arm package for IRAS lab
         { positions: [0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0], time_from_start: { sec: 2 } },
     ]
     }" -1
+
+    ros2 topic pub --once /joint_command sensor_msgs/msg/JointState "{\
+  name: ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6', 'joint_7'], \
+  position: [0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0] \
+}"
     
 
 3. Try resetting the robot

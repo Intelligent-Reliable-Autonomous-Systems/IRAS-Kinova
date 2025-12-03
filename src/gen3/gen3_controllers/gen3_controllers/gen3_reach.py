@@ -28,20 +28,16 @@ class Gen3ReachPolicy(PolicyController):
     """Policy controller for Gen3 Reach using a pre-trained policy model."""
 
     targ_cmd_len = 7  # XYZ RPY + gripper open/close
-    ISAAC_OC = np.array([-1.0, 1.0])  # min/max for gripper open close in IsaacSim
-    GEN3_OC = np.array([0, 0.8])  # min/max for gripper open/close in Gen3 hardware
     _action_scale = 0.5
 
     def __init__(self) -> None:
         """Initialize the URReachPolicy instance."""
         super().__init__("Gen3ReachPolicy")
 
-        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach")
+        self.declare_parameter("model_path", f"{os.getcwd()}/sim2real/policies/reach2")
         self.declare_parameter("target_pos", [0.6, 0.1, 0.45, 0.7071, 0.0, 0.7071, 0.0])
-        self.declare_parameter("isaac", False) # If running in isaacsim
         self.model_path = self.get_parameter("model_path").value
         target_pos = self.get_parameter("target_pos").value
-        self.isaac = self.get_parameter("isaac").value
 
         self.load_policy(f"{self.model_path}/policy.pt", f"{self.model_path}/env.yaml")
 
@@ -107,7 +103,7 @@ class Gen3ReachPolicy(PolicyController):
         joint_pos[: len(self.arm_actions)] = self.default_pos[: len(self.arm_actions)] + (
             self.action[: len(self.arm_actions)] * self._action_scale
         )
-
+        
         joint_pos[-1] = ((self.action[-1] - self.isaac_oc[0]) / (self.isaac_oc[1] - self.isaac_oc[0])) * (
             self.gen3_oc[1] - self.gen3_oc[0]
         ) + self.gen3_oc[0]
@@ -152,13 +148,6 @@ class Gen3ReachPolicy(PolicyController):
                     return SetParametersResult(successful=False)
                 self.get_logger().info(f"Updated target_pos to: {param.value}")
                 self.target_pos = np.array(list(param.value))
-            if param.name == "isaac":
-                if not isinstance(param.value, bool):
-                    self.get_logger().warn(f"Isaac param must be of type `bool`")
-                    return SetParametersResult(successful=False)
-                self.get_logger().info(f"Updated `isaac` to: {param.value}")
-                self.isaac = param.value
-                self.gen3_oc = self.GEN3_OC if not self.isaac else self.ISAAC_OC
 
         return SetParametersResult(successful=True)
 

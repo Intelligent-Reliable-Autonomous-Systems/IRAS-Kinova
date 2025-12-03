@@ -21,6 +21,7 @@ from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
 )
+from launch.conditions import IfCondition
 
 
 def launch_setup(context, *args, **kwargs):
@@ -49,6 +50,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "device": robot_ip,
         }.items(),
+        condition=IfCondition(LaunchConfiguration("vision")),
     )
 
     ee_publisher = Node(
