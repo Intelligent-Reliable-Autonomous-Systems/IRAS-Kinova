@@ -25,7 +25,7 @@ setup(
         ],
     },
     entry_points={
-        "console_scripts": ["move_arm_bt = gen3_py.move_arm_bt:main"],
-        "console_scripts": ["ee_pub = gen3_py.ee_publisher:main"],
+        "console_scripts": ["move_arm_bt = gen3_py.move_arm_bt:main",
+                            "ee_pub = gen3_py.ee_publisher:main"],
     },
 )
