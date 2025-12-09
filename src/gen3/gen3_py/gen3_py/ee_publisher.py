@@ -1,7 +1,17 @@
+"""
+Docstring for gen3.gen3_py.gen3_py.ee_publisher
+
+Publishes the end effector position relative to the base link
+
+Written by Will Solow, 2025
+"""
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from tf2_ros import Buffer, TransformListener
+from rcl_interfaces.msg import SetParametersResult
+
 
 
 class EEPositionPublisher(Node):
@@ -12,11 +22,10 @@ class EEPositionPublisher(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.timer = self.create_timer(0.05, self.timer_callback)  # 20Hz
+        self.timer = self.create_timer(0.05, self.timer_callback)
 
-        # Change to your frames!
         self.base_frame = "base_link"
-        self.ee_frame = "bracelet_link" 
+        self.ee_frame = "end_effector_link" 
         self.ready = False
 
     def timer_callback(self):
@@ -42,7 +51,6 @@ class EEPositionPublisher(Node):
                 z=t.transform.translation.z,
             )
 
-            # orientation is already a Quaternion — this part is fine
             msg.pose.orientation = Quaternion(
                 x=t.transform.rotation.x,
                 y=t.transform.rotation.y,

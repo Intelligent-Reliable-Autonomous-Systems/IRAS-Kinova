@@ -1,0 +1,5 @@
+Params skill
+---
+trajectory_msgs/JointTrajectory trajectory
+bool success
+string message

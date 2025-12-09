@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+import os 
+from glob import glob
 
 package_name = 'gen3_skills'
 
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join("share", package_name, "launch"), glob("launch/*.py")),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,7 +26,8 @@ setup(
         ],
     },
     entry_points={
-        'console_scripts': ["skills_manager = gen3_skills.skills_manager:main"
+        'console_scripts': ["skills_manager = gen3_skills.skills_manager:main",
+                            "skills = gen3_skills.skills.skills:main"
         ],
     },
 )

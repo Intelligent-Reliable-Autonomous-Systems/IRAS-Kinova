@@ -9,15 +9,11 @@ Written by Will Solow, 2025
 import rclpy 
 from rclpy.node import Node
 
-from builtin_interfaces.msg import Duration
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
-from rclpy.action import ActionClient
-from gen3_cpp.msgs import ParamDict
+from gen3_cpp.msg import Params
 from rcl_interfaces.msg import SetParametersResult
-
-from gen3_skills.skills import skills
-import inspect
+from gen3_cpp.srv import ParamSkill
 
 class SkillsManager(Node):
 
@@ -34,38 +30,36 @@ class SkillsManager(Node):
 
         self.traj_pub = self.create_publisher(self.TRAJ_TOPIC_TYPE, self.cmd_topic, 10)
 
-        self.avail_skills = inspect.getmembers(skills, inspect.isfunction)
+        self.skills_sub = self.create_subscription(Params, '/run_skill', self.skill_callback, 10)
 
-        self.skills_client = ActionClient(self, ParamDict, "/skills")
+        self.skills_client = self.create_client(ParamSkill, '/get_skill_trajectory')
+        while not self.skills_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Skills service `/get_skill_trajectory` not available, waiting...')
 
-    def send_skill(self) -> None:
+    def skill_callback(self, msg: Params) -> None:
         """
         Send position goal to the gripper
         """
-        self.skills_client.wait_for_server()
+        self.get_logger().info(f"{msg}")
 
-        goal_msg = GripperCommand.Goal()
-        goal_msg.command.position = position
-        goal_msg.command.max_effort = max_effort
+        req = ParamSkill.Request()
+        req.skill = msg
 
-        send_goal_future = self.gripper_action_client.send_goal_async(
-            goal_msg, feedback_callback=self.feedback_callback
-        )
-        send_goal_future.add_done_callback(self.goal_response_callback)
+        # Call the service asynchronously
+        future = self.skills_client.call_async(req)
+        future.add_done_callback(self.service_response_callback)
 
-    def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
+    
+    def service_response_callback(self, future):
+        self.get_logger().info("Callaing response callback...")
+        try:
+            response = future.result()
+            self.get_logger().info(f"Service success: {response.success}, message: {response.message}")
+            self.get_logger().info(f"{response.trajectory}")
+        except Exception as e:
+            self.get_logger().error(f"Service call failed: {e}")
 
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            return
 
-        get_result_future = goal_handle.get_result_async()
-        get_result_future.add_done_callback(self.get_result_callback)
-
-    def get_result_callback(self, future):
-        result = future.result().result
 
 
     def param_callback(self, params):
