@@ -38,7 +38,7 @@ class SkillsManager(Node):
 
         self.skills_client = ActionClient(self, ParamDict, "/skills")
 
-    def send_skill(self, position: float = 0.0, max_effort: float = 100.0) -> None:
+    def send_skill(self) -> None:
         """
         Send position goal to the gripper
         """
