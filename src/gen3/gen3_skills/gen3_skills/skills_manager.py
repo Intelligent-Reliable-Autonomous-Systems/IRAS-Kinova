@@ -9,14 +9,19 @@ Written by Will Solow, 2025
 import rclpy
 from rclpy.node import Node
 
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from sensor_msgs.msg import JointState
+from control_msgs.action import GripperCommand
 from gen3_cpp.msg import Params
 from rcl_interfaces.msg import SetParametersResult
 from gen3_cpp.srv import ParamSkill
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from rclpy.task import Future
+from rclpy.action import ActionClient
+import time
+
+from gen3_skills.utils import ARM_JOINTS, GRIPPER_JOINTS
 
 
 class SkillsManager(Node):
@@ -36,6 +41,7 @@ class SkillsManager(Node):
         self.TRAJ_TOPIC_TYPE = JointTrajectory if not self.isaac else JointState
 
         self.traj_pub = self.create_publisher(self.TRAJ_TOPIC_TYPE, self.cmd_topic, 10)
+        self.gripper_action_client = ActionClient(self, GripperCommand, "/robotiq_gripper_controller/gripper_cmd")
 
         self.skills_sub = self.create_subscription(
             Params, "/run_skill", self.skill_callback, 10, callback_group=self._mu_cb_group
@@ -62,10 +68,29 @@ class SkillsManager(Node):
 
         resp = skills_future.result()
 
+        TRAJ_TIME = 1
         if resp.success:
-            self.traj_pub.publish(resp.trajectory)
+            if resp.arm:
+                traj = JointTrajectory()
+                traj.joint_names = resp.joint_state.name
+                point = JointTrajectoryPoint()
+                point.positions = resp.joint_state.position
+                point.time_from_start.sec = TRAJ_TIME
+                traj.points.append(point)
+                self.traj_pub.publish(traj)
+                if resp.gripper:
+                    time.sleep(TRAJ_TIME)
+            if resp.gripper:
+                goal_msg = GripperCommand.Goal()
+                goal_msg.command.position = resp.gripper_position
+                goal_msg.command.max_effort = 100.0
+
+                send_goal_future = self.gripper_action_client.send_goal_async(goal_msg)
         else:
             self.get_logger().info("Unable to create joint trajectory ")
+
+    def get_result_callback(self, future):
+        result = future.result().result
 
     def param_callback(self, params):
         for param in params:

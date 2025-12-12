@@ -23,28 +23,31 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 
 import numpy as np
 
+from gen3_skills.utils import (
+    ARM_JOINTS,
+    GRIPPER_JOINTS,
+    GRIPPER_CTRL_JOINT,
+    GRIPPER_CTRL_JOINT_ID,
+    GRIPPER_OPEN,
+    GRIPPER_CLOSE,
+)
+
 
 class Skills(Node):
 
-    SKILLS = ["go_to_xyz", "go_to_xy", "top_grasp", "side_grasp", "lift", "twist", "rotate", "no_op", "place", "reset"]
-
-    ARM_JOINTS = [
-        "joint_1",
-        "joint_2",
-        "joint_3",
-        "joint_4",
-        "joint_5",
-        "joint_6",
-        "joint_7",
-    ]
-
-    GRIPPER_JOINTS = [
-        "robotiq_85_left_finger_tip_joint",
-        "robotiq_85_left_inner_knuckle_joint",
-        "robotiq_85_left_knuckle_joint",
-        "robotiq_85_right_finger_tip_joint",
-        "robotiq_85_right_inner_knuckle_joint",
-        "robotiq_85_right_knuckle_joint",
+    SKILLS = [
+        "go_to_xyz",
+        "go_to_xy",
+        "top_grasp",
+        "side_grasp",
+        "lift",
+        "twist",
+        "rotate",
+        "no_op",
+        "place",
+        "reset",
+        "open",
+        "close",
     ]
 
     def __init__(self) -> None:
@@ -114,15 +117,18 @@ class Skills(Node):
 
         param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
 
-        joint_traj = await skill(**param_dict)
-        self.get_logger().info(f"TRAJ RETURN FROM JOINT STATE:\n{joint_traj}")
+        joint_state, gripper_pos, arm, gripper = await skill(**param_dict)
 
-        response.success = joint_traj is not None
-        response.trajectory = joint_traj if joint_traj is not None else JointTrajectory()
+        self.get_logger().info(f"{joint_state}, {gripper_pos}, {arm}, {gripper}")
+        response.success = True
+        response.joint_state = joint_state if joint_state is not None else JointState()
+        response.gripper_position = gripper_pos if gripper_pos is not None else float()
+        response.gripper = gripper
+        response.arm = arm
 
         return response
 
-    async def go_to_xyz(self, x: float, y: float, z: float, **kwargs) -> JointTrajectory:
+    async def go_to_xyz(self, x: float, y: float, z: float, **kwargs) -> JointState:
         """
         Go to a location in xyz space
         """
@@ -149,8 +155,8 @@ class Skills(Node):
 
         # Build a RobotState with zeros
         js = JointState()
-        js.name = self.ARM_JOINTS
-        js.position = [0.0] * len(self.ARM_JOINTS)
+        js.name = ARM_JOINTS
+        js.position = [0.0] * len(ARM_JOINTS)
         rs = RobotState(joint_state=js)
 
         ik.robot_state = rs
@@ -163,32 +169,98 @@ class Skills(Node):
 
         if result is None:
             self.get_logger().error("Received None result (timeout or internal error).")
-            return None
+            return None, None, True, False
+
+        if result.error_code.val != 1:
+            self.get_logger().error(f"IK failed: error={result.error_code.val}\nFull message:\n{result}")
+            return None, None, True, False
+
+        js = result.solution.joint_state
+        gripper_pos = js.position[GRIPPER_CTRL_JOINT_ID]
+        js.name = js.name[: len(ARM_JOINTS)]
+        js.position = js.position[: len(ARM_JOINTS)]
+
+        return js, gripper_pos, True, False
+
+    async def go_to_xy(self, x: float = None, y: float = None, **kwargs) -> JointTrajectory:
+        """
+        Go to a location specified by xy and mantain end effector orientation
+        """
+        """
+        Go to a location in xyz space
+        """
+        req = GetPositionIK.Request()
+        ik = PositionIKRequest()
+
+        # Current Pose
+        pose = PoseStamped()
+        pose.header.frame_id = "base_link"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = self.ee_pose.position.z
+        pose.pose.orientation.x = self.ee_pose.orientation.x
+        pose.pose.orientation.y = self.ee_pose.orientation.y
+        pose.pose.orientation.z = self.ee_pose.orientation.z
+        pose.pose.orientation.w = self.ee_pose.orientation.w
+
+        ik.group_name = "manipulator"
+        ik.ik_link_name = "end_effector_link"
+        ik.pose_stamped = pose
+        ik.timeout = Duration(sec=5)
+        ik.avoid_collisions = False
+
+        # Build a RobotState with zeros
+        js = JointState()
+        js.name = ARM_JOINTS
+        js.position = [0.0] * len(ARM_JOINTS)
+        rs = RobotState(joint_state=js)
+
+        ik.robot_state = rs
+        req.ik_request = ik
+
+        compute_ik_future: Future = self.ik_client.call_async(req)
+        await compute_ik_future
+
+        result = compute_ik_future.result()
+
+        if result is None:
+            self.get_logger().error("Received None result (timeout or internal error).")
+            return None, None, True, False
 
         self.get_logger().info(f"IK response error_code: {result.error_code.val}")
 
         if result.error_code.val != 1:
             self.get_logger().error(f"IK failed: error={result.error_code.val}\nFull message:\n{result}")
-            return None
+            return None, None, True, False
 
         js = result.solution.joint_state
+        gripper_pos = js.position[GRIPPER_CTRL_JOINT_ID]
+        js.name = js.name[: len(ARM_JOINTS)]
+        js.position = js.position[: len(ARM_JOINTS)]
 
-        self.get_logger().info(f"IK JOINT STATE:\n{js}")
+        return result.solution.joint_state, gripper_pos, True, False
 
-        traj = JointTrajectory()
-        traj.joint_names = js.name[: len(self.ARM_JOINTS)]
-        point = JointTrajectoryPoint()
-        point.positions = js.position[: len(self.ARM_JOINTS)]
-        point.time_from_start.sec = 1
-        traj.points.append(point)
-
-        return traj
-
-    def go_to_xy(x: float = None, y: float = None, curr_state: JointState = None, **kwargs) -> JointTrajectory:
+    async def no_op(self, **kwargs) -> None:
         """
-        Go to a location specified by xy and mantain end effector orientation
+        No operation
         """
-        pass
+
+        return None, None, False, False
+
+    async def open(self, **kwargs) -> None:
+        """
+        No operation
+        """
+
+        return None, GRIPPER_OPEN, False, True
+
+    async def close(self, **kwargs) -> None:
+        """
+        No operation
+        """
+
+        return None, GRIPPER_CLOSE, False, True
 
     def param_callback(self, params):
         for param in params:

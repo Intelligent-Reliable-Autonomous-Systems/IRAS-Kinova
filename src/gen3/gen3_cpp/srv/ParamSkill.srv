@@ -1,5 +1,8 @@
 Params skill
 ---
-trajectory_msgs/JointTrajectory trajectory
+sensor_msgs/JointState joint_state
+float32 gripper_position
+bool gripper
+bool arm
 bool success
 string message

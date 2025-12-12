@@ -9,11 +9,12 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 
 add_executable(gen3_reset src/gen3_reset.cpp)
-ament_target_dependencies(gen3_reset rclcpp trajectory_msgs)
+ament_target_dependencies(gen3_reset rclcpp trajectory_msgs sensor_msgs)
 
 set(msg_files
   "msg/KeyFloat.msg"
@@ -24,7 +25,7 @@ set(msg_files
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  DEPENDENCIES trajectory_msgs
+  DEPENDENCIES trajectory_msgs sensor_msgs
 )
 
 
