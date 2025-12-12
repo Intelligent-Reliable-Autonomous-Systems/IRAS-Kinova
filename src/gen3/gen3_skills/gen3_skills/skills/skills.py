@@ -38,6 +38,15 @@ class Skills(Node):
         "joint_7",
     ]
 
+    GRIPPER_JOINTS = [
+        "robotiq_85_left_finger_tip_joint",
+        "robotiq_85_left_inner_knuckle_joint",
+        "robotiq_85_left_knuckle_joint",
+        "robotiq_85_right_finger_tip_joint",
+        "robotiq_85_right_inner_knuckle_joint",
+        "robotiq_85_right_knuckle_joint",
+    ]
+
     def __init__(self) -> None:
 
         super().__init__("gen3_skills")
