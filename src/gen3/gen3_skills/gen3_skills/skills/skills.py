@@ -151,7 +151,7 @@ class Skills(Node):
 
         self.get_logger().info(f"Requesting IK:\n{req}")
 
-        compute_ik_future: Future = self.ik_client.call_async(req)
+        compute_ik_future = self.ik_client.call_async(req)
 
         self.get_logger().info(f"FUTURE CALL:\n{compute_ik_future.result().solution.joint_state}")
 
