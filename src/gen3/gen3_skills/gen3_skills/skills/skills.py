@@ -12,9 +12,11 @@ from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 from rcl_interfaces.msg import SetParametersResult
-from tf_transformations import euler_from_quaternion, quaternion_from_euler
 from moveit_msgs.srv import GetPositionIK
 from gen3_cpp.srv import ParamSkill
+from moveit_msgs.msg import PositionIKRequest, RobotState
+from builtin_interfaces.msg import Duration
+from rclpy.task import Future
 
 
 import numpy as np 
@@ -31,6 +33,14 @@ class Skills(Node):
               "no_op",
               "place",
               "reset"]
+    
+    ARM_JOINTS = [
+            "joint_1", "joint_2", "joint_3",
+            "joint_4", "joint_5", "joint_6",
+            "joint_7",
+        ]
+    
+    
     
     def __init__(self) -> None:
 
@@ -65,7 +75,10 @@ class Skills(Node):
             if callable(getattr(self, name)) and name in self.SKILLS
         }
 
-    def skill_trajectory_callback(self, request, response):
+        self.last_ik_solution = None
+        self.new_ik_solution = False
+
+    async def skill_trajectory_callback(self, request, response):
         """
         Callaback for skill trajectories
         """
@@ -77,9 +90,10 @@ class Skills(Node):
 
         param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
 
-        traj = skill(**param_dict)
+        traj = await skill(**param_dict)
+        self.get_logger().info(f"{traj}")
         response.success = traj is not None
-        response.trajectory = traj
+        response.trajectory = traj if traj is not None else JointTrajectory()
 
         return response
 
@@ -98,64 +112,77 @@ class Skills(Node):
         """
         Get the end effector pose in XYZ RPY
         """
-        q = [msg.pose.orientation.x,
-            msg.pose.orientation.y,
-            msg.pose.orientation.z,
-            msg.pose.orientation.w]
-
-        r, p, y = euler_from_quaternion(q)
-        x, y, z = msg.pose.position.x, msg.pose.position.y, msg.pose.position.z
-
-        self.ee_pose = np.array([x,y,z,r,p,y],dtype=np.float32)
+        self.ee_pose = msg.pose
         self.has_ee_pose = True
-
-    def go_to_xyz(self, x: float=None, y: float=None, z: float=None, **kwargs) -> JointTrajectory:
+    
+    def go_to_xyz(self, x:float, y:float, z:float, **kwargs):
         """
-        Go to a location specified by xyz and mantain end effector orientation
+        Go to a location in xyz space 
         """
+        req = GetPositionIK.Request()
+        ik = PositionIKRequest()
 
-        self.get_logger().info(f"x: {x}, y: {y}, z: {z}")
-        if not self.has_ee_pose: return None
-
-        q = quaternion_from_euler(self.ee_pose[3], self.ee_pose[4], self.ee_pose[5])
-
+        # Current Pose
         pose = PoseStamped()
         pose.header.frame_id = "base_link"
+        pose.header.stamp = self.get_clock().now().to_msg()
         pose.pose.position.x = x
         pose.pose.position.y = y
         pose.pose.position.z = z
-        pose.pose.orientation.x = q[0]
-        pose.pose.orientation.y = q[1]
-        pose.pose.orientation.z = q[2]
-        pose.pose.orientation.w = q[3]
+        pose.pose.orientation.x = self.ee_pose.orientation.x
+        pose.pose.orientation.y = self.ee_pose.orientation.y
+        pose.pose.orientation.z = self.ee_pose.orientation.z
+        pose.pose.orientation.w = self.ee_pose.orientation.w
 
-        req = GetPositionIK.Request()
-        req.ik_request.group_name = self.arm_group_name
-        req.ik_request.pose_stamped = pose
-        req.ik_request.timeout.sec = 1
-        '''req.ik_request.robot_state.joint_state.name = self.current_joint_names
-        req.ik_request.robot_state.joint_state.position = self.current_joint_positions 
-        req.ik_request.robot_state.joint_state.velocity = self.current_joint_velocities'''
-        req.ik_request.robot_state.joint_state.name = [
-            "joint_1","joint_2","joint_3","joint_4","joint_5","joint_6","joint_7"
-        ]
-        req.ik_request.robot_state.joint_state.position = [0.0]*7
-        req.ik_request.ik_link_name = "end_effector_link"
-        req.ik_request.avoid_collisions = True
+        ik.group_name = "manipulator"
+        ik.ik_link_name = "end_effector_link"
+        ik.pose_stamped = pose
+        ik.timeout = Duration(sec=5)
+        ik.avoid_collisions = False
 
-        self.get_logger().info("STARTING SPIN...")
-        self.get_logger().info(f"IK Request: {req}")
-        future = self.ik_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
-        
-        if future.result().error_code.val == 1: 
-            joints = future.result().solution.joint_state
-            self.get_logger().info("NOT RETURNING NONE...")
+        # Build a RobotState with zeros
+        js = JointState()
+        js.name = self.ARM_JOINTS
+        js.position = [0.0] * len(self.ARM_JOINTS)
+        rs = RobotState(joint_state=js)
 
-            return dict(zip(joints.name, joints.position))
-        else:
-            self.get_logger().info("RETURNING NONE...")
-            return None
+        ik.robot_state = rs
+        req.ik_request = ik
+
+        self.get_logger().info(f"Requesting IK:\n{req}")
+
+        compute_ik_future: Future = self.ik_client.call_async(req)
+
+        self.get_logger().info(f"FUTURE CALL:\n{compute_ik_future.result().solution.joint_state}")
+
+        return compute_ik_future.result().solution.joint_state
+        #future.add_done_callback(self.handle_ik_callback)
+
+    def handle_ik_callback(self, future):
+        result = future.result()
+
+        if result is None:
+            self.get_logger().error("Received None result (timeout or internal error).")
+            self.last_ik_solution = None
+            return 
+
+        self.get_logger().info(f"IK response error_code: {result.error_code.val}")
+
+        if result.error_code.val != 1:
+            self.get_logger().error(
+                f"IK failed: error={result.error_code.val}\nFull message:\n{result}"
+            )
+            self.last_ik_solution = None
+            return 
+
+        js = result.solution.joint_state
+        self.get_logger().info("IK succeeded. Joint solution:")
+        for n, p in zip(js.name, js.position):
+            self.get_logger().info(f"  {n}: {p:.4f}")
+
+        self.get_logger().info("Done.")
+        self.last_ik_solution = result.solution.joint_state
+
 
     def go_to_xy(x: float=None, y: float=None, curr_state: JointState=None, **kwargs) -> JointTrajectory:
         """

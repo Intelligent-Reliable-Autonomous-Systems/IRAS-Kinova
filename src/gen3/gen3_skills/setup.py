@@ -27,7 +27,8 @@ setup(
     },
     entry_points={
         'console_scripts': ["skills_manager = gen3_skills.skills_manager:main",
-                            "skills = gen3_skills.skills.skills:main"
+                            "skills = gen3_skills.skills.skills:main",
+                            "ik_test = gen3_skills.ik_tester:main",
         ],
     },
 )

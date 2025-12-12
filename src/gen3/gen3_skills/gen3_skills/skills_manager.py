@@ -49,9 +49,10 @@ class SkillsManager(Node):
         future = self.skills_client.call_async(req)
         future.add_done_callback(self.service_response_callback)
 
+
     
     def service_response_callback(self, future):
-        self.get_logger().info("Callaing response callback...")
+        self.get_logger().info("Calling response callback...")
         try:
             response = future.result()
             self.get_logger().info(f"Service success: {response.success}, message: {response.message}")
