@@ -8,7 +8,7 @@ Written by Will Solow, 2025
 
 import rclpy
 from rclpy.node import Node
-from trajectory_msgs.msg import JointTrajectory
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 from rcl_interfaces.msg import SetParametersResult
@@ -17,6 +17,8 @@ from gen3_cpp.srv import ParamSkill
 from moveit_msgs.msg import PositionIKRequest, RobotState
 from builtin_interfaces.msg import Duration
 from rclpy.task import Future
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 
 
 import numpy as np 
@@ -56,13 +58,16 @@ class Skills(Node):
         self.arm_group_name = "manipulator"
         self.gripper_group_name = "gripper"
 
+        self._reentrant_cb_group = ReentrantCallbackGroup()
+        self._mu_cb_group = MutuallyExclusiveCallbackGroup()
+
         self.TRAJ_TOPIC_TYPE = JointTrajectory if not self.isaac else JointState
 
         self.traj_sub = self.create_subscription(JointState, self.state_topic, self.robot_state_callback, 10)
         self.ee_sub = self.create_subscription(PoseStamped, self.ee_topic, self.ee_pose_callback, 10)
 
         self.srv = self.create_service(ParamSkill, '/get_skill_trajectory',self.skill_trajectory_callback)
-        self.ik_client = self.create_client(GetPositionIK, '/compute_ik')
+        self.ik_client = self.create_client(GetPositionIK, '/compute_ik', callback_group=self._reentrant_cb_group)
 
         self.add_on_set_parameters_callback(self.param_callback)
 
@@ -77,25 +82,6 @@ class Skills(Node):
 
         self.last_ik_solution = None
         self.new_ik_solution = False
-
-    def skill_trajectory_callback(self, request, response):
-        """
-        Callaback for skill trajectories
-        """
-        if request.skill.skill_name not in self.available_skills:
-            response.success = False
-            return response 
-        
-        skill = self.available_skills[request.skill.skill_name]
-
-        param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
-
-        traj = skill(**param_dict)
-        self.get_logger().info(f"{traj}")
-        response.success = traj is not None
-        response.trajectory = traj if traj is not None else JointTrajectory()
-
-        return response
 
     def robot_state_callback(self, msg: JointState) -> None:
         """
@@ -115,7 +101,30 @@ class Skills(Node):
         self.ee_pose = msg.pose
         self.has_ee_pose = True
     
-    def go_to_xyz(self, x:float, y:float, z:float, **kwargs):
+
+    async def skill_trajectory_callback(self, request, response):
+        """
+        Callaback for skill trajectories
+        """
+        if request.skill.skill_name not in self.available_skills:
+            response.success = False
+            return response 
+        
+        skill = self.available_skills[request.skill.skill_name]
+
+        param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
+
+        joint_traj = await skill(**param_dict)
+        self.get_logger().info(f"TRAJ RETURN FROM JOINT STATE:\n{joint_traj}")
+
+        
+        response.success = joint_traj is not None
+        response.trajectory = joint_traj if joint_traj is not None else JointTrajectory()
+
+        return response
+
+
+    async def go_to_xyz(self, x:float, y:float, z:float, **kwargs) -> JointTrajectory:
         """
         Go to a location in xyz space 
         """
@@ -149,22 +158,14 @@ class Skills(Node):
         ik.robot_state = rs
         req.ik_request = ik
 
-        self.get_logger().info(f"Requesting IK:\n{req}")
+        compute_ik_future: Future = self.ik_client.call_async(req)
+        await compute_ik_future
 
-        compute_ik_future = self.ik_client.call_async(req)
-
-        self.get_logger().info(f"FUTURE CALL:\n{compute_ik_future.result().solution.joint_state}")
-
-        return compute_ik_future.result().solution.joint_state
-        #future.add_done_callback(self.handle_ik_callback)
-
-    def handle_ik_callback(self, future):
-        result = future.result()
+        result = compute_ik_future.result()
 
         if result is None:
             self.get_logger().error("Received None result (timeout or internal error).")
-            self.last_ik_solution = None
-            return 
+            return None
 
         self.get_logger().info(f"IK response error_code: {result.error_code.val}")
 
@@ -172,18 +173,21 @@ class Skills(Node):
             self.get_logger().error(
                 f"IK failed: error={result.error_code.val}\nFull message:\n{result}"
             )
-            self.last_ik_solution = None
-            return 
+            return None
 
         js = result.solution.joint_state
-        self.get_logger().info("IK succeeded. Joint solution:")
-        for n, p in zip(js.name, js.position):
-            self.get_logger().info(f"  {n}: {p:.4f}")
 
-        self.get_logger().info("Done.")
-        self.last_ik_solution = result.solution.joint_state
+        self.get_logger().info(f"IK JOINT STATE:\n{js}")
 
+        traj = JointTrajectory()
+        traj.joint_names = js.name[:len(self.ARM_JOINTS)]
+        point = JointTrajectoryPoint()
+        point.positions = js.position[:len(self.ARM_JOINTS)]
+        point.time_from_start.sec = 1
+        traj.points.append(point)
 
+        return traj
+        
     def go_to_xy(x: float=None, y: float=None, curr_state: JointState=None, **kwargs) -> JointTrajectory:
         """
         Go to a location specified by xy and mantain end effector orientation
@@ -216,7 +220,8 @@ class Skills(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = Skills()
-    rclpy.spin(node)
+    executor = MultiThreadedExecutor()
+    rclpy.spin(node, executor=executor)
     node.destroy_node()
     rclpy.shutdown()
 

@@ -14,6 +14,9 @@ from sensor_msgs.msg import JointState
 from gen3_cpp.msg import Params
 from rcl_interfaces.msg import SetParametersResult
 from gen3_cpp.srv import ParamSkill
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+from rclpy.task import Future
 
 class SkillsManager(Node):
 
@@ -26,17 +29,20 @@ class SkillsManager(Node):
         self.cmd_topic = self.get_parameter("cmd_topic").value
         self.isaac = self.get_parameter("isaac").value
 
+        self._reentrant_cb_group = ReentrantCallbackGroup()
+        self._mu_cb_group = MutuallyExclusiveCallbackGroup()
+
         self.TRAJ_TOPIC_TYPE = JointTrajectory if not self.isaac else JointState
 
         self.traj_pub = self.create_publisher(self.TRAJ_TOPIC_TYPE, self.cmd_topic, 10)
 
-        self.skills_sub = self.create_subscription(Params, '/run_skill', self.skill_callback, 10)
+        self.skills_sub = self.create_subscription(Params, '/run_skill', self.skill_callback, 10, callback_group=self._mu_cb_group)
 
-        self.skills_client = self.create_client(ParamSkill, '/get_skill_trajectory')
+        self.skills_client = self.create_client(ParamSkill, '/get_skill_trajectory', callback_group=self._reentrant_cb_group)
         while not self.skills_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Skills service `/get_skill_trajectory` not available, waiting...')
 
-    def skill_callback(self, msg: Params) -> None:
+    async def skill_callback(self, msg: Params) -> None:
         """
         Send position goal to the gripper
         """
@@ -46,21 +52,15 @@ class SkillsManager(Node):
         req.skill = msg
 
         # Call the service asynchronously
-        future = self.skills_client.call_async(req)
-        future.add_done_callback(self.service_response_callback)
+        skills_future: Future = self.skills_client.call_async(req)
+        await skills_future 
 
+        resp = skills_future.result()
 
-    
-    def service_response_callback(self, future):
-        self.get_logger().info("Calling response callback...")
-        try:
-            response = future.result()
-            self.get_logger().info(f"Service success: {response.success}, message: {response.message}")
-            self.get_logger().info(f"{response.trajectory}")
-        except Exception as e:
-            self.get_logger().error(f"Service call failed: {e}")
-
-
+        if resp.success:
+            self.traj_pub.publish(resp.trajectory)
+        else:
+            self.get_logger().info("Unable to create joint trajectory ")
 
 
     def param_callback(self, params):
@@ -90,7 +90,8 @@ class SkillsManager(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = SkillsManager()
-    rclpy.spin(node)
+    executor = MultiThreadedExecutor()
+    rclpy.spin(node, executor=executor)
     node.destroy_node()
     rclpy.shutdown()
 
