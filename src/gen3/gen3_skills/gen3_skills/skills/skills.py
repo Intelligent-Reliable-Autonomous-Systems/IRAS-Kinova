@@ -78,7 +78,7 @@ class Skills(Node):
         self.last_ik_solution = None
         self.new_ik_solution = False
 
-    async def skill_trajectory_callback(self, request, response):
+    def skill_trajectory_callback(self, request, response):
         """
         Callaback for skill trajectories
         """
@@ -90,7 +90,7 @@ class Skills(Node):
 
         param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
 
-        traj = await skill(**param_dict)
+        traj = skill(**param_dict)
         self.get_logger().info(f"{traj}")
         response.success = traj is not None
         response.trajectory = traj if traj is not None else JointTrajectory()
