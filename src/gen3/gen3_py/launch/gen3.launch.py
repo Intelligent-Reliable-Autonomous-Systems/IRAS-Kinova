@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
-    #pkg_kortex_moveit = get_package_share_directory("kinova_gen3_7dof_robotiq_2f_85_moveit_config")
+    # pkg_kortex_moveit = get_package_share_directory("kinova_gen3_7dof_robotiq_2f_85_moveit_config")
     pkg_gen3_py = get_package_share_directory("gen3_py")
 
     # Variables
@@ -62,20 +62,20 @@ def launch_setup(context, *args, **kwargs):
 
     moveit_config = (
         MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
-        .robot_description(mappings={
-            "use_fake_hardware": use_fake_hardware,
-            "robot_ip": robot_ip,
-            "gripper": "robotiq_2f_85",
-            "gripper_joint_name": "robotiq_85_left_knuckle_joint",
-            "dof": "7",
-            "gripper_max_velocity": "100",
-            "gripper_max_force": "100",
-            "use_internal_bus_gripper_comm": "true",
-        })
-        .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        .planning_scene_monitor(
-            publish_robot_description=True, publish_robot_description_semantic=True
+        .robot_description(
+            mappings={
+                "use_fake_hardware": use_fake_hardware,
+                "robot_ip": robot_ip,
+                "gripper": "robotiq_2f_85",
+                "gripper_joint_name": "robotiq_85_left_knuckle_joint",
+                "dof": "7",
+                "gripper_max_velocity": "100",
+                "gripper_max_force": "100",
+                "use_internal_bus_gripper_comm": "true",
+            }
         )
+        .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
     )
@@ -89,12 +89,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    nodes_to_launch = [
-        kinova_arm_launch,
-        kinova_vision_launch,
-        move_group_node,
-        ee_publisher
-    ]
+    nodes_to_launch = [kinova_arm_launch, kinova_vision_launch, move_group_node, ee_publisher]
 
     return nodes_to_launch
 

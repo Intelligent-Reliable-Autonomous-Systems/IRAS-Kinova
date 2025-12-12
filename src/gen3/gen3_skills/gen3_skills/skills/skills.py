@@ -21,35 +21,29 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 
 
-import numpy as np 
+import numpy as np
+
 
 class Skills(Node):
 
-    SKILLS = ["go_to_xyz",
-              "go_to_xy",
-              "top_grasp",
-              "side_grasp",
-              "lift",
-              "twist",
-              "rotate",
-              "no_op",
-              "place",
-              "reset"]
-    
+    SKILLS = ["go_to_xyz", "go_to_xy", "top_grasp", "side_grasp", "lift", "twist", "rotate", "no_op", "place", "reset"]
+
     ARM_JOINTS = [
-            "joint_1", "joint_2", "joint_3",
-            "joint_4", "joint_5", "joint_6",
-            "joint_7",
-        ]
-    
-    
-    
+        "joint_1",
+        "joint_2",
+        "joint_3",
+        "joint_4",
+        "joint_5",
+        "joint_6",
+        "joint_7",
+    ]
+
     def __init__(self) -> None:
 
         super().__init__("gen3_skills")
 
         self.declare_parameter("state_topic", "/joint_states")
-        self.declare_parameter("isaac", False) # If running in isaacsim
+        self.declare_parameter("isaac", False)  # If running in isaacsim
         self.declare_parameter("ee_topic", "ee_pose")
         self.state_topic = self.get_parameter("state_topic").value
         self.isaac = self.get_parameter("isaac").value
@@ -66,8 +60,8 @@ class Skills(Node):
         self.traj_sub = self.create_subscription(JointState, self.state_topic, self.robot_state_callback, 10)
         self.ee_sub = self.create_subscription(PoseStamped, self.ee_topic, self.ee_pose_callback, 10)
 
-        self.srv = self.create_service(ParamSkill, '/get_skill_trajectory',self.skill_trajectory_callback)
-        self.ik_client = self.create_client(GetPositionIK, '/compute_ik', callback_group=self._reentrant_cb_group)
+        self.srv = self.create_service(ParamSkill, "/get_skill_trajectory", self.skill_trajectory_callback)
+        self.ik_client = self.create_client(GetPositionIK, "/compute_ik", callback_group=self._reentrant_cb_group)
 
         self.add_on_set_parameters_callback(self.param_callback)
 
@@ -75,9 +69,7 @@ class Skills(Node):
         self.has_ee_pose = False
 
         self.available_skills = {
-            name: getattr(self, name)
-            for name in dir(self)
-            if callable(getattr(self, name)) and name in self.SKILLS
+            name: getattr(self, name) for name in dir(self) if callable(getattr(self, name)) and name in self.SKILLS
         }
 
         self.last_ik_solution = None
@@ -100,7 +92,6 @@ class Skills(Node):
         """
         self.ee_pose = msg.pose
         self.has_ee_pose = True
-    
 
     async def skill_trajectory_callback(self, request, response):
         """
@@ -108,8 +99,8 @@ class Skills(Node):
         """
         if request.skill.skill_name not in self.available_skills:
             response.success = False
-            return response 
-        
+            return response
+
         skill = self.available_skills[request.skill.skill_name]
 
         param_dict = dict(zip(request.skill.param_names, request.skill.param_values))
@@ -117,16 +108,14 @@ class Skills(Node):
         joint_traj = await skill(**param_dict)
         self.get_logger().info(f"TRAJ RETURN FROM JOINT STATE:\n{joint_traj}")
 
-        
         response.success = joint_traj is not None
         response.trajectory = joint_traj if joint_traj is not None else JointTrajectory()
 
         return response
 
-
-    async def go_to_xyz(self, x:float, y:float, z:float, **kwargs) -> JointTrajectory:
+    async def go_to_xyz(self, x: float, y: float, z: float, **kwargs) -> JointTrajectory:
         """
-        Go to a location in xyz space 
+        Go to a location in xyz space
         """
         req = GetPositionIK.Request()
         ik = PositionIKRequest()
@@ -170,9 +159,7 @@ class Skills(Node):
         self.get_logger().info(f"IK response error_code: {result.error_code.val}")
 
         if result.error_code.val != 1:
-            self.get_logger().error(
-                f"IK failed: error={result.error_code.val}\nFull message:\n{result}"
-            )
+            self.get_logger().error(f"IK failed: error={result.error_code.val}\nFull message:\n{result}")
             return None
 
         js = result.solution.joint_state
@@ -180,15 +167,15 @@ class Skills(Node):
         self.get_logger().info(f"IK JOINT STATE:\n{js}")
 
         traj = JointTrajectory()
-        traj.joint_names = js.name[:len(self.ARM_JOINTS)]
+        traj.joint_names = js.name[: len(self.ARM_JOINTS)]
         point = JointTrajectoryPoint()
-        point.positions = js.position[:len(self.ARM_JOINTS)]
+        point.positions = js.position[: len(self.ARM_JOINTS)]
         point.time_from_start.sec = 1
         traj.points.append(point)
 
         return traj
-        
-    def go_to_xy(x: float=None, y: float=None, curr_state: JointState=None, **kwargs) -> JointTrajectory:
+
+    def go_to_xy(x: float = None, y: float = None, curr_state: JointState = None, **kwargs) -> JointTrajectory:
         """
         Go to a location specified by xy and mantain end effector orientation
         """
@@ -216,7 +203,8 @@ class Skills(Node):
                 self.traj_sub = self.create_subscription(JointState, self.state_topic, self.robot_state_callback, 10)
 
         return SetParametersResult(successful=True)
-    
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = Skills()

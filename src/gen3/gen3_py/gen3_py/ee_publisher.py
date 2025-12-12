@@ -13,7 +13,6 @@ from tf2_ros import Buffer, TransformListener
 from rcl_interfaces.msg import SetParametersResult
 
 
-
 class EEPositionPublisher(Node):
     def __init__(self):
         super().__init__("ee_position_publisher")
@@ -25,7 +24,7 @@ class EEPositionPublisher(Node):
         self.timer = self.create_timer(0.05, self.timer_callback)
 
         self.base_frame = "base_link"
-        self.ee_frame = "end_effector_link" 
+        self.ee_frame = "end_effector_link"
         self.ready = False
 
     def timer_callback(self):

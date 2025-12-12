@@ -50,7 +50,7 @@ class Gen3ReachPolicy(PolicyController):
         self.marker_pub = self.create_publisher(Marker, "target_point", 10)
 
         self.gen3_oc = self.GEN3_OC if not self.isaac else self.ISAAC_OC
-        self.isaac_oc = self.ISAAC_OC 
+        self.isaac_oc = self.ISAAC_OC
 
     def _compute_observation(self, command: np.ndarray) -> np.ndarray:
         """
@@ -103,7 +103,7 @@ class Gen3ReachPolicy(PolicyController):
         joint_pos[: len(self.arm_actions)] = self.default_pos[: len(self.arm_actions)] + (
             self.action[: len(self.arm_actions)] * self._action_scale
         )
-        
+
         joint_pos[-1] = ((self.action[-1] - self.isaac_oc[0]) / (self.isaac_oc[1] - self.isaac_oc[0])) * (
             self.gen3_oc[1] - self.gen3_oc[0]
         ) + self.gen3_oc[0]

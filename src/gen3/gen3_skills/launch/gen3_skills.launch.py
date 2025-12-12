@@ -26,21 +26,14 @@ from launch.conditions import IfCondition
 
 def launch_setup(context, *args, **kwargs):
 
-
     skills_manager = Node(
         package="gen3_skills",
         executable="skills_manager",
     )
 
-    skills = Node(
-        package="gen3_skills",
-        executable="skills"
-    )
+    skills = Node(package="gen3_skills", executable="skills")
 
-    nodes_to_launch = [
-        skills_manager,
-        skills
-    ]
+    nodes_to_launch = [skills_manager, skills]
 
     return nodes_to_launch
 

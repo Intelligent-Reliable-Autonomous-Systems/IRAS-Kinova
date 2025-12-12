@@ -6,7 +6,7 @@ Node for managing all skills for the Kinova Gen3 Arm
 Written by Will Solow, 2025
 """
 
-import rclpy 
+import rclpy
 from rclpy.node import Node
 
 from trajectory_msgs.msg import JointTrajectory
@@ -18,6 +18,7 @@ from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from rclpy.task import Future
 
+
 class SkillsManager(Node):
 
     def __init__(self) -> None:
@@ -25,7 +26,7 @@ class SkillsManager(Node):
         super().__init__("gen3_skills_manager")
 
         self.declare_parameter("cmd_topic", "/joint_trajectory_controller/joint_trajectory")
-        self.declare_parameter("isaac", False) # If running in isaacsim
+        self.declare_parameter("isaac", False)  # If running in isaacsim
         self.cmd_topic = self.get_parameter("cmd_topic").value
         self.isaac = self.get_parameter("isaac").value
 
@@ -36,11 +37,15 @@ class SkillsManager(Node):
 
         self.traj_pub = self.create_publisher(self.TRAJ_TOPIC_TYPE, self.cmd_topic, 10)
 
-        self.skills_sub = self.create_subscription(Params, '/run_skill', self.skill_callback, 10, callback_group=self._mu_cb_group)
+        self.skills_sub = self.create_subscription(
+            Params, "/run_skill", self.skill_callback, 10, callback_group=self._mu_cb_group
+        )
 
-        self.skills_client = self.create_client(ParamSkill, '/get_skill_trajectory', callback_group=self._reentrant_cb_group)
+        self.skills_client = self.create_client(
+            ParamSkill, "/get_skill_trajectory", callback_group=self._reentrant_cb_group
+        )
         while not self.skills_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Skills service `/get_skill_trajectory` not available, waiting...')
+            self.get_logger().info("Skills service `/get_skill_trajectory` not available, waiting...")
 
     async def skill_callback(self, msg: Params) -> None:
         """
@@ -53,7 +58,7 @@ class SkillsManager(Node):
 
         # Call the service asynchronously
         skills_future: Future = self.skills_client.call_async(req)
-        await skills_future 
+        await skills_future
 
         resp = skills_future.result()
 
@@ -61,7 +66,6 @@ class SkillsManager(Node):
             self.traj_pub.publish(resp.trajectory)
         else:
             self.get_logger().info("Unable to create joint trajectory ")
-
 
     def param_callback(self, params):
         for param in params:

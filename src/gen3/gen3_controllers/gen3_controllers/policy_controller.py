@@ -47,7 +47,7 @@ class PolicyController(Node):
     current_joint_velocities = None
     ISAAC_OC = np.array([-1.0, 1.0])  # min/max for gripper open close in IsaacSim
     GEN3_OC = np.array([0, 0.8])  # min/max for gripper open/close in Gen3 hardware
-    
+
     def __init__(self, name) -> None:
         super().__init__(name)
 
@@ -55,7 +55,7 @@ class PolicyController(Node):
         self.declare_parameter("cmd_topic", "/joint_trajectory_controller/joint_trajectory")
         self.declare_parameter("min_traj_dur", 1.0)
         self.declare_parameter("step_size", 0.02)
-        self.declare_parameter("isaac", False) # If running in isaacsim
+        self.declare_parameter("isaac", False)  # If running in isaacsim
         self.state_topic = self.get_parameter("state_topic").value
         self.cmd_topic = self.get_parameter("cmd_topic").value
         self.min_traj_dur = self.get_parameter("min_traj_dur").value
@@ -94,7 +94,7 @@ class PolicyController(Node):
             self.default_pos = np.array(position[: self.num_joints], dtype=np.float32)
             self.has_default_pos = True
         self.current_joint_positions = np.array(position[: self.num_joints], dtype=np.float32)
-        
+
         self.current_joint_velocities = np.array(velocity[: self.num_joints], dtype=np.float32)
         self.has_joint_data = True
 
@@ -115,7 +115,7 @@ class PolicyController(Node):
                     traj = JointState()
                     traj.name = self.arm_joints + self.gripper_joints
                     traj.position = joint_pos.tolist()
-                else: 
+                else:
                     traj = JointTrajectory()
                     traj.joint_names = self.arm_joints
 
@@ -236,7 +236,7 @@ class PolicyController(Node):
             obs = torch.from_numpy(obs).view(1, -1).float()
             action = self.policy(obs).detach().view(-1).numpy()
         return action
-    
+
     def param_callback(self, params):
         for param in params:
             if param.name == "isaac":
