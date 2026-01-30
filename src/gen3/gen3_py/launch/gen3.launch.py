@@ -26,7 +26,6 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 
 def launch_setup(context, *args, **kwargs):
-
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
@@ -39,7 +38,9 @@ def launch_setup(context, *args, **kwargs):
 
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])),
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])
+        ),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
@@ -48,7 +49,11 @@ def launch_setup(context, *args, **kwargs):
     )
 
     kinova_vision_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_vision, "launch", "kinova_vision.launch.py"])),
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [pkg_kortex_vision, "launch", "kinova_vision.launch.py"]
+            )
+        ),
         launch_arguments={
             "device": robot_ip,
         }.items(),
@@ -61,7 +66,9 @@ def launch_setup(context, *args, **kwargs):
     )
 
     moveit_config = (
-        MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
+        MoveItConfigsBuilder(
+            "gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config"
+        )
         .robot_description(
             mappings={
                 "use_fake_hardware": use_fake_hardware,
@@ -75,7 +82,9 @@ def launch_setup(context, *args, **kwargs):
             }
         )
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
+        .planning_scene_monitor(
+            publish_robot_description=True, publish_robot_description_semantic=True
+        )
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
     )
@@ -89,13 +98,20 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    nodes_to_launch = [kinova_arm_launch, kinova_vision_launch, move_group_node, ee_publisher]
+    rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
+
+    nodes_to_launch = [
+        kinova_arm_launch,
+        kinova_vision_launch,
+        move_group_node,
+        ee_publisher,
+        rosbridge_node,
+    ]
 
     return nodes_to_launch
 
 
 def generate_launch_description():
-
     declared_arguments = []
 
     # Simulation specific arguments
@@ -123,4 +139,6 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )
