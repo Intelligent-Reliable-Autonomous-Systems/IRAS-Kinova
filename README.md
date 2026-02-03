@@ -10,6 +10,14 @@ Kinova Kortex Gen3 arm package for IRAS lab
 5. Open browser to 192.168.8.10 (Gen3 IPv4 address). This opens the Kinova WebApp. Username/password is admin/admin.
 6. See [Kinova Reference Guide](https://www.kinovarobotics.com/uploads/User-Guide-Gen3-R07.pdf) for more information.
 
+# IRAS Alienware laptop
+
+1. Plug in Ethernet cable directly to laptop using port on left
+2. Robot is on 192.168.8.10, wired IP address must be set 192.168.8.11 (or greater than 10). This is sometimes finicky
+3. Check that control can be done in Gen3 Web App (Open FireFox and go to 192.168.8.10). Username/password is admin/admin
+4. If all this works, we can launch the robot: `ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.8.10 use_fake_hardware:=false gripper:=robotiq_2f_85`
+
+
 ## Installation Instructions
 
 1. Install ROS2 Jazzy
@@ -20,20 +28,20 @@ Kinova Kortex Gen3 arm package for IRAS lab
 2. Clone this repository: 
     ```git@github.com:Intelligent-Reliable-Autonomous-Systems/IRAS-Kinova.git```
 
-3. Navigate to `src/` and clone the ros2_kortex package:
+3. Clone the ros2_kortex package and install dependencies:
 
     ```
-    git clone https://github.com/Kinovarobotics/ros2_kortex.git
-    vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex.jazzy.repos
-    vcs import src --skip-existing --input src/ros2_kortex/ros2_kortex-not-released.jazzy.repos
+    git clone https://github.com/Kinovarobotics/ros2_kortex.git src/ros2_kortex/ros2_kortex
+    vcs import src/ros2_kortex --skip-existing --input src/ros2_kortex/ros2_kortex/ros2_kortex.jazzy.repos
+    vcs import src/ros2_kortex --skip-existing --input src/ros2_kortex/ros2_kortex/ros2_kortex-not-released.jazzy.repos
     ```
 
 4. Clone the ros2_kortex_vision package:
     ```
-    git clone https://github.com/Kinovarobotics/ros2_kortex_vision.git
+    git clone https://github.com/Kinovarobotics/ros2_kortex_vision.git src/ros2_kortex_vision
     ```
 
-5. Navigate to IRAS-Kinova/ folder and Source the ROS2 installation 
+5. Source the ROS2 installation from toryhe home direct
 
     ```
     source opt/ros/jazzy/setup.bash
