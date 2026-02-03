@@ -13,15 +13,13 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
 )
-
-from launch_ros.actions import Node
-
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
 )
-from launch.conditions import IfCondition
+from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
 
 
@@ -45,6 +43,7 @@ def launch_setup(context, *args, **kwargs):
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
             "gripper": "robotiq_2f_85",
+            "vision": "true",
         }.items(),
     )
 
@@ -63,6 +62,11 @@ def launch_setup(context, *args, **kwargs):
     ee_publisher = Node(
         package="gen3_py",
         executable="ee_pub",
+    )
+
+    robot_info_publisher = Node(
+        package="gen3_py",
+        executable="robot_info",
     )
 
     moveit_config = (
@@ -98,14 +102,15 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
+    # rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
 
     nodes_to_launch = [
         kinova_arm_launch,
         kinova_vision_launch,
         move_group_node,
         ee_publisher,
-        rosbridge_node,
+        # robot_info_publisher,
+        # rosbridge_node,
     ]
 
     return nodes_to_launch

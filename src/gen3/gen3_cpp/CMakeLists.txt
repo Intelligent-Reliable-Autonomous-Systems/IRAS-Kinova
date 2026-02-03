@@ -19,8 +19,11 @@ ament_target_dependencies(gen3_reset rclcpp trajectory_msgs sensor_msgs)
 set(msg_files
   "msg/KeyFloat.msg"
   "msg/ParamDict.msg"
+  "msg/Jacobian.msg"
+  "msg/RobotInfo.msg"
   "msg/Params.msg"
   "srv/ParamSkill.srv"
+  "srv/Jacobian.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
