@@ -27,6 +27,8 @@ class LinkPosePublisher(Node):
         all_pose_w = []
         i = 0
         for link in self.robot.links:
+            if link.name == "world":
+                continue
             t = self.get_link_pose(link.name)
             if t is None:
                 continue

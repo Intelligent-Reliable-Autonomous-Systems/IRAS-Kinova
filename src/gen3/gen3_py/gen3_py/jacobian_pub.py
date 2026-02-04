@@ -20,12 +20,15 @@ class JacobianPublisher(Node):
 
         self.robot = URDF.from_xml_string(urdf_xml)
         self.ok, self.tree = treeFromUrdfModel(self.robot)
+        self.articulated_joints = [j for j in self.robot.joints if j.limit]
 
     def timer_callback(self) -> None:
         jacobian_msg = Jacobian()
         jacobians = []
         k = 0
         for link in self.robot.links:
+            if link.name == "world":
+                continue
             try:
                 chain = self.tree.getChain("base_link", link.name)
                 jac_solver = PyKDL.ChainJntToJacSolver(chain)
@@ -33,7 +36,7 @@ class JacobianPublisher(Node):
                 J = PyKDL.Jacobian(chain.getNrOfJoints())
                 jac_solver.JntToJac(q, J)
                 for i in range(6):
-                    for j in range(len(self.robot.joints)):
+                    for j in range(len(self.articulated_joints)):
                         if j < J.columns():
                             jacobians.append(J[i, j])
                         else:
@@ -47,7 +50,7 @@ class JacobianPublisher(Node):
         jacobian_msg.num_links = k
         jacobian_msg.jac_matrix = jacobians
         jacobian_msg.rows = 6
-        jacobian_msg.cols = len(self.robot.joints)
+        jacobian_msg.cols = len(self.articulated_joints)
         # self.get_logger().info(f"Jacobian length {len(jacobians)}")
         self.pub.publish(jacobian_msg)
 
