@@ -1,3 +1,4 @@
 int32 rows
 int32 cols
-float64[] data
+int32 num_links
+float64[] jac_matrix

@@ -1,7 +1,0 @@
-string base_link
-string ee_link
-float64[] q
----
-int32 rows
-int32 cols
-float64[] data

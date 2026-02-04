@@ -156,12 +156,12 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
-        kinova_vision_launch,
-        move_group_node,
-        ee_publisher,
+        # kinova_vision_launch,
+        # move_group_node,
+        # ee_publisher,
         robot_info_publisher,
-        body_pose_publisher,
         jacobian_publisher,
+        body_pose_publisher,
         # rosbridge_node,
     ]
 

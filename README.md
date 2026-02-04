@@ -36,9 +36,10 @@ Kinova Kortex Gen3 arm package for IRAS lab
     vcs import src/ros2_kortex --skip-existing --input src/ros2_kortex/ros2_kortex/ros2_kortex-not-released.jazzy.repos
     ```
 
-4. Clone the ros2_kortex_vision package:
+4. Clone the ros2_kortex_vision package and kdl_parser_py package:
     ```
     git clone https://github.com/Kinovarobotics/ros2_kortex_vision.git src/ros2_kortex_vision
+    git clone https://github.com/ros/kdl_parser_py.git src/kdl_parser_py
     ```
 
 5. Source the ROS2 installation from toryhe home direct

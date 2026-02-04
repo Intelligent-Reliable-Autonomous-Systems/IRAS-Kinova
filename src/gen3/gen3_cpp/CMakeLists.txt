@@ -21,9 +21,9 @@ set(msg_files
   "msg/ParamDict.msg"
   "msg/Jacobian.msg"
   "msg/RobotInfo.msg"
+  "msg/BodyPose.msg"
   "msg/Params.msg"
   "srv/ParamSkill.srv"
-  "srv/Jacobian.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

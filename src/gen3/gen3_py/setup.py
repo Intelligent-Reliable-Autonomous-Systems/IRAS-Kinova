@@ -30,6 +30,8 @@ setup(
             "move_arm_bt = gen3_py.move_arm_bt:main",
             "ee_pub = gen3_py.ee_publisher:main",
             "robot_info=gen3_py.robot_info:main",
+            "body_pose=gen3_py.link_pose_publisher:main",
+            "jacobian_pub=gen3_py.jacobian_pub:main",
         ],
     },
 )
