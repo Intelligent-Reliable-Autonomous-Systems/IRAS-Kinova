@@ -33,18 +33,22 @@ class JacobianPublisher(Node):
                 J = PyKDL.Jacobian(chain.getNrOfJoints())
                 jac_solver.JntToJac(q, J)
                 for i in range(6):
-                    for j in range(J.columns()):
-                        jacobians.append(J[i, j])
+                    for j in range(len(self.robot.joints)):
+                        if j < J.columns():
+                            jacobians.append(J[i, j])
+                        else:
+                            jacobians.append(0)
             except:
-                self.get_logger().info(
-                    f"Unable to compute Jacobian Transform for {link.name}"
-                )
+                # self.get_logger().info(
+                #    f"Unable to compute Jacobian Transform for {link.name}"
+                # )
+                continue
             k += 1
         jacobian_msg.num_links = k
         jacobian_msg.jac_matrix = jacobians
         jacobian_msg.rows = 6
         jacobian_msg.cols = len(self.robot.joints)
-
+        # self.get_logger().info(f"Jacobian length {len(jacobians)}")
         self.pub.publish(jacobian_msg)
 
 
