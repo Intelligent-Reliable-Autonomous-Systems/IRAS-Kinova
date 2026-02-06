@@ -1,3 +1,11 @@
+"""
+link_pose_publisher.py
+
+Handles publishing the current positions of all the links in the robot
+
+Written by Will Solow, 2026. IRAS Lab.
+"""
+
 import rclpy
 import tf2_ros
 from gen3_cpp.msg import BodyPose
@@ -17,15 +25,19 @@ class LinkPosePublisher(Node):
         self.timer = self.create_timer(0.05, self.timer_callback)
 
         self.declare_parameter("robot_description", "")
-        urdf_xml = (
-            self.get_parameter("robot_description").get_parameter_value().string_value
-        )
+        urdf_xml = self.get_parameter("robot_description").get_parameter_value().string_value
         self.robot = URDF.from_xml_string(urdf_xml)
 
-    def timer_callback(self):
+    def timer_callback(self) -> None:
+        """Compute and publish the position and orientation of every link in the robot.
+
+        Relative to the world frame.
+
+        """
         pose_msg = BodyPose()
         all_pose_w = []
         i = 0
+        # Compute for the body_pose_w
         for link in self.robot.links:
             if link.name == "world":
                 continue
@@ -38,6 +50,7 @@ class LinkPosePublisher(Node):
                 all_pose_w.append(p)
             i += 1
 
+        # Compute for the root_pose_w, ie the base link
         t = self.get_link_pose("base_link")
         if t is not None:
             pos = t.transform.translation
@@ -50,19 +63,26 @@ class LinkPosePublisher(Node):
 
             self.pub.publish(pose_msg)
         else:
-            self.get_logger().warn("TRANSLATION FROM BASE LINK IS NONE")
+            self.get_logger().warn("Translation from world to `base_link` is None!")
 
-    def get_link_pose(self, link_name: str, reference_frame: str = "world"):
+    def get_link_pose(self, link_name: str, reference_frame: str = "world") -> TransformStamped:
+        """Look up the latest transform between links.
+
+        Args:
+            link_name: string of the current link to look up
+            reference_frame: string name of the reference frame, defaults to world
+
+        Returns:
+            A Transform between link and reference
+
+        """
         try:
-            # Look up the latest transform
-            trans: TransformStamped = self.tf_buffer.lookup_transform(
+            return self.tf_buffer.lookup_transform(
                 reference_frame,
                 link_name,
                 rclpy.time.Time(),
             )
-            return trans
         except Exception:
-            # self.get_logger().warn(f"Could not get transform for {link_name}: {e}")
             return None
 
 

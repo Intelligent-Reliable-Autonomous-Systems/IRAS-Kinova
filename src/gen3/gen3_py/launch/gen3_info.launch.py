@@ -50,9 +50,7 @@ def launch_setup(context, *args, **kwargs):
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution(
-                [FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]
-            ),
+            PathJoinSubstitution([FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]),
             " ",
             "robot_ip:=xxx.yyy.zzz.www",
             " ",
@@ -79,9 +77,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
@@ -91,11 +87,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     kinova_vision_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [pkg_kortex_vision, "launch", "kinova_vision.launch.py"]
-            )
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_vision, "launch", "kinova_vision.launch.py"])),
         launch_arguments={
             "device": robot_ip,
         }.items(),
@@ -107,22 +99,14 @@ def launch_setup(context, *args, **kwargs):
         executable="ee_pub",
     )
 
-    robot_info_publisher = Node(
-        package="gen3_py", executable="robot_info", parameters=[robot_description]
-    )
+    robot_info_publisher = Node(package="gen3_py", executable="robot_info", parameters=[robot_description])
 
-    body_pose_publisher = Node(
-        package="gen3_py", executable="body_pose", parameters=[robot_description]
-    )
+    body_pose_publisher = Node(package="gen3_py", executable="body_pose", parameters=[robot_description])
 
-    jacobian_publisher = Node(
-        package="gen3_py", executable="jacobian_pub", parameters=[robot_description]
-    )
+    jacobian_publisher = Node(package="gen3_py", executable="jacobian_pub", parameters=[robot_description])
 
     moveit_config = (
-        MoveItConfigsBuilder(
-            "gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config"
-        )
+        MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
         .robot_description(
             mappings={
                 "use_fake_hardware": use_fake_hardware,
@@ -136,9 +120,7 @@ def launch_setup(context, *args, **kwargs):
             }
         )
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        .planning_scene_monitor(
-            publish_robot_description=True, publish_robot_description_semantic=True
-        )
+        .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
     )
@@ -196,6 +178,4 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(
-        declared_arguments + [OpaqueFunction(function=launch_setup)]
-    )
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
