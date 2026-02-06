@@ -1,5 +1,5 @@
 """
-kinova.launch.py
+gen3.launch.py
 
 Main launch file for Kinova Gen3 Arm with Robotiq 2F 85 gripper
 
@@ -30,12 +30,11 @@ def launch_setup(context, *args, **kwargs):
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
-    # pkg_kortex_moveit = get_package_share_directory("kinova_gen3_7dof_robotiq_2f_85_moveit_config")
-    pkg_gen3_py = get_package_share_directory("gen3_py")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot_ip = LaunchConfiguration("robot_ip")
+    default_joint_pos = LaunchConfiguration("default_joint_pos")
 
     robot_controllers = PathJoinSubstitution(
         # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
@@ -50,9 +49,7 @@ def launch_setup(context, *args, **kwargs):
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution(
-                [FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]
-            ),
+            PathJoinSubstitution([FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]),
             " ",
             "robot_ip:=xxx.yyy.zzz.www",
             " ",
@@ -79,9 +76,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
@@ -91,11 +86,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     kinova_vision_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [pkg_kortex_vision, "launch", "kinova_vision.launch.py"]
-            )
-        ),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_vision, "launch", "kinova_vision.launch.py"])),
         launch_arguments={
             "device": robot_ip,
         }.items(),
@@ -108,21 +99,23 @@ def launch_setup(context, *args, **kwargs):
     )
 
     robot_info_publisher = Node(
-        package="gen3_py", executable="robot_info", parameters=[robot_description]
+        package="gen3_py",
+        executable="robot_info",
+        parameters=[
+            {
+                "robot_description": robot_description_content,
+                "default_joint_pos": default_joint_pos,
+                "traj_duration_sec": 0 if use_fake_hardware else 8,
+            }
+        ],
     )
 
-    body_pose_publisher = Node(
-        package="gen3_py", executable="body_pose", parameters=[robot_description]
-    )
+    body_pose_publisher = Node(package="gen3_py", executable="body_pose", parameters=[robot_description])
 
-    jacobian_publisher = Node(
-        package="gen3_py", executable="jacobian_pub", parameters=[robot_description]
-    )
+    jacobian_publisher = Node(package="gen3_py", executable="jacobian_pub", parameters=[robot_description])
 
     moveit_config = (
-        MoveItConfigsBuilder(
-            "gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config"
-        )
+        MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
         .robot_description(
             mappings={
                 "use_fake_hardware": use_fake_hardware,
@@ -136,9 +129,7 @@ def launch_setup(context, *args, **kwargs):
             }
         )
         .trajectory_execution(file_path="config/moveit_controllers.yaml")
-        .planning_scene_monitor(
-            publish_robot_description=True, publish_robot_description_semantic=True
-        )
+        .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
     )
@@ -196,6 +187,12 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(
-        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "default_joint_pos",
+            default_value="[0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0]",
+            description="Default joint positions of the robot",
+        )
     )
+
+    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

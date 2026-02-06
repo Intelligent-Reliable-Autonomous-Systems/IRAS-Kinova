@@ -1,29 +1,50 @@
 """
-Docstring for gen3.gen3_py.gen3_py.ee_publisher
+robot_info.py
 
-Publishes the end effector position relative to the base link
+Handles publishing the link and joint names of the robot and setting
+the initial position of the robot.
 
-Written by Will Solow, 2025
+Written by Will Solow, 2026. IRAS Lab.
 """
+
+import time
 
 import rclpy
 from gen3_cpp.msg import RobotInfo
 from rclpy.node import Node
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from urdf_parser_py.urdf import URDF
 
 
 class RobotInfoPublisher(Node):
     def __init__(self):
         super().__init__("robot_info")
+        self.declare_parameter("robot_description", "")
+        self.declare_parameter("traj_duration_sec", 0)
+        self.declare_parameter("traj_duration_nsec", int(1e8))
+        self.declare_parameter(
+            "default_joint_pos",
+            [0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0],
+        )
+
+        urdf_xml = self.get_parameter("robot_description").get_parameter_value().string_value
+        self.default_joint_pos = self.get_parameter("default_joint_pos").get_parameter_value().double_array_value
+        self.traj_duration_sec = self.get_parameter("traj_duration_sec").value
+        self.traj_duration_nsec = self.get_parameter("traj_duration_nsec").value
+
+        self.robot = URDF.from_xml_string(urdf_xml)
+
+        self.joint_traj_pub = self.create_publisher(
+            JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
+        )
+        while self.joint_traj_pub.get_subscription_count() == 0:
+            self.get_logger().info("Waiting for /joint_trajectory_controller/joint_trajectory subscribers...")
+            time.sleep(0.1)
+        self.publish_initial_joint_state()
+
         self.pub = self.create_publisher(RobotInfo, "/robot_info", 10)
 
         self.timer = self.create_timer(0.05, self.timer_callback)
-
-        self.declare_parameter("robot_description", "")
-        urdf_xml = (
-            self.get_parameter("robot_description").get_parameter_value().string_value
-        )
-        self.robot = URDF.from_xml_string(urdf_xml)
 
     def timer_callback(self):
         upper_limit = []
@@ -44,6 +65,28 @@ class RobotInfoPublisher(Node):
         msg_pub.lower_limits = lower_limit
         msg_pub.upper_limits = upper_limit
         self.pub.publish(msg_pub)
+
+    def publish_initial_joint_state(self):
+        msg = JointTrajectory()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.joint_names = [
+            "joint_1",
+            "joint_2",
+            "joint_3",
+            "joint_4",
+            "joint_5",
+            "joint_6",
+            "joint_7",
+        ]
+
+        point = JointTrajectoryPoint()
+        point.positions = self.default_joint_pos
+        point.time_from_start.sec = self.traj_duration_sec
+        point.time_from_start.nanosec = self.traj_duration_nsec
+        msg.points = [point]
+
+        self.joint_traj_pub.publish(msg)
+        time.sleep(self.traj_duration_sec * 1.5 + self.traj_duration_nsec)
 
 
 def main(args=None):
