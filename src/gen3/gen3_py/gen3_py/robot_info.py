@@ -18,7 +18,7 @@ from urdf_parser_py.urdf import URDF
 
 class RobotInfoPublisher(Node):
     def __init__(self):
-        super().__init__("robot_info")
+        super().__init__("robot_info_pub")
         self.declare_parameter("robot_description", "")
         self.declare_parameter("traj_duration_sec", 0)
         self.declare_parameter("traj_duration_nsec", int(1e8))
@@ -86,7 +86,7 @@ class RobotInfoPublisher(Node):
         msg.points = [point]
 
         self.joint_traj_pub.publish(msg)
-        time.sleep(self.traj_duration_sec * 1.5 + self.traj_duration_nsec)
+        time.sleep(self.traj_duration_sec * 1.5 + 0.1)
 
 
 def main(args=None):
