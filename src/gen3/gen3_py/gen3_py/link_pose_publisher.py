@@ -38,16 +38,21 @@ class LinkPosePublisher(Node):
         all_pose_w = []
         i = 0
         # Compute for the body_pose_w
+        # Indices must align with robot_info links
         for link in self.robot.links:
             if link.name == "world":
-                continue
-            t = self.get_link_pose(link.name)
-            if t is None:
-                continue
-            pos = t.transform.translation
-            quat = t.transform.rotation
-            for p in [pos.x, pos.y, pos.z, quat.x, quat.y, quat.z, quat.w]:
-                all_pose_w.append(p)
+                for _ in range(7):
+                    all_pose_w.append(float("nan"))
+            else:
+                t = self.get_link_pose(link.name)
+                if t is None:
+                    for _ in range(7):
+                        all_pose_w.append(float("nan"))
+                else:
+                    pos = t.transform.translation
+                    quat = t.transform.rotation
+                    for p in [pos.x, pos.y, pos.z, quat.x, quat.y, quat.z, quat.w]:
+                        all_pose_w.append(p)
             i += 1
 
         # Compute for the root_pose_w, ie the base link
