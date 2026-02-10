@@ -29,6 +29,7 @@ import sys
 import yaml
 import itertools
 
+from gen3.gen3_skills.gen3_skills.utils import safety_arm_check
 import rclpy
 from rclpy.node import Node
 
@@ -106,6 +107,11 @@ class PolicyController(Node):
 
         # Get simulation joint positions from the robot's forward model
         joint_pos = self.forward(self.step_size, self.target_pos)
+        #ADD SAFETY CHECK 
+        if(not safety_arm_check(self.current_joint_positions, joint_pos ,self.current_joint_velocities, self.step_size)):
+            print("This position is not safe to be executed, skipping command.")
+            return
+
 
         if joint_pos is not None:
             if len(joint_pos) != self.num_actions:

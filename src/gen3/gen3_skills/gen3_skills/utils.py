@@ -29,3 +29,18 @@ GRIPPER_CTRL_JOINT_ID = 9
 
 GRIPPER_OPEN = 0.0
 GRIPPER_CLOSE = 0.8
+
+#define the limits for the arm joints
+MAX_VELOCITY = 2.0 #rad/s
+MAX_ACCELERATION = 5.0 #rad/s^2
+
+def safety_arm_check(current_joint_positions, joint_pos, current_joint_velocities, step_size):
+    """Checks if the joint implied velocity adn acceleration are within a safe range,
+    which implies that the torque is in the safe range and prevents the hardware shoutdown."""
+
+    for i in range(len(joint_pos)-1):
+        implied_velocity = (joint_pos[i] - current_joint_positions[i]) / step_size
+        implied_acceleration = (implied_velocity - current_joint_velocities[i]) / step_size
+        if abs(implied_velocity) > MAX_VELOCITY or abs(implied_acceleration) > MAX_ACCELERATION:
+            return False
+    return True
