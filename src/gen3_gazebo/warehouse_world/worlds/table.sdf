@@ -1,0 +1,198 @@
+
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="table_world">
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin name='gz::sim::systems::Physics' filename='libgz-sim-physics-system.so'/>
+    <plugin name='gz::sim::systems::UserCommands' filename='libgz-sim-user-commands-system.so'/>
+    <plugin name='gz::sim::systems::SceneBroadcaster' filename='libgz-sim-scene-broadcaster-system.so'/>
+    <plugin name="gz::sim::systems::Sensors" filename="libgz-sim-sensors-system.so">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin name="gz::sim::systems::Imu" filename="libgz-sim-imu-system.so"/>
+    <plugin name="gz::sim::systems::NavSat" filename="libgz-sim-navsat-system.so"/>
+
+    <scene>
+      <ambient>1 1 1 1</ambient>
+      <background>0.3 0.7 0.9 1</background>
+      <shadows>0</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <model name="table_camera">
+      <static>true</static>
+      <link name="camera_link">
+        <pose>7 0 2.5 0 0.5 0</pose> <!-- position/orientation -->
+        <sensor name="rgbd_camera" type="depth">
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>30</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>10</far>
+            </clip>
+          </camera>
+        </sensor>
+
+        <sensor name="rgb_camera" type="camera">
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>30</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format> <!-- or "R8G8B8" for color -->
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>10</far>
+            </clip>
+          </camera>
+        </sensor>
+      </link>
+    </model>
+
+    <model name="world_camera">
+      <static>true</static>
+      <link name="camera_link">
+        <pose>-18 0 15 0 .8 0</pose> <!-- position/orientation -->
+        <sensor name="rgbd_camera" type="depth">
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>30</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>30</far>
+            </clip>
+          </camera>
+        </sensor>
+
+        <sensor name="rgb_camera" type="camera">
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>30</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format> <!-- or "R8G8B8" for color -->
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>50</far>
+            </clip>
+          </camera>
+        </sensor>
+      </link>
+    </model>
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>-22.986687</latitude_deg>
+      <longitude_deg>-43.202501</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <include>
+        <name>Table</name>
+        <pose>9.5 0 0 0 0 1.57</pose>
+        <uri>
+        package://warehouse_world/models/table
+        </uri>
+    </include>
+
+    <include>
+        <name>StorageBin</name>
+        <pose>9.0 0.8 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/bin
+        </uri>
+    </include>
+
+    <include>
+        <name>RedBlock</name>
+        <pose>9.0 -0.6 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/block_red
+        </uri>
+    </include>
+
+    <include>
+        <name>BlueBlock</name>
+        <pose>9.2 -0.6 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/block_blue
+        </uri>
+    </include>
+
+    <include>
+        <name>GreenBlock</name>
+        <pose>8.8 -0.6 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/block_green
+        </uri>
+    </include>
+
+    <include>
+        <name>PurpleBlock</name>
+        <pose>9.1 -0.4 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/block_purple
+        </uri>
+    </include>
+
+    <include>
+        <name>YellowBlock</name>
+        <pose>8.9 -0.4 1.03 0 0 0</pose>
+        <uri>
+        package://warehouse_world/models/block_yellow
+        </uri>
+    </include>
+  </world>
+</sdf>
