@@ -18,6 +18,11 @@ Kinova Kortex Gen3 arm package for IRAS lab
 4. If all this works, we can launch the robot: `ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.8.10 use_fake_hardware:=false gripper:=robotiq_2f_85`
 
 
+# Gazebo Installation
+Gazebo can be really finicky. It does not support mimic joints, so the Kinova Gen3 arm is brought up without the Robotiq 2F85 gripper. 
+Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with debugging this.
+
+
 ## Installation Instructions
 
 1. Install ROS2 Jazzy
@@ -108,11 +113,18 @@ Kinova Kortex Gen3 arm package for IRAS lab
     ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.10.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
-2. Launch the policy
+2. OR launch the robot in Gazebo
+
+    ```
+    ros2 launch warehouse_sim launch_warehouse.py
+    ```
+
+3. Launch the policy
 
     ```
     ros2 run gen3_controllers gen3_reach
     ```
+
 ## Testing Sim to Real with a Reach Policy
 
 1. Launch the robot hardware
