@@ -108,7 +108,7 @@ class PolicyController(Node):
         # Get simulation joint positions from the robot's forward model
         joint_pos = self.forward(self.step_size, self.target_pos)
         #ADD SAFETY CHECK 
-        if(not safety_arm_check(self.current_joint_positions, joint_pos ,self.current_joint_velocities, self.step_size)):
+        if(not safety_arm_check(self.current_joint_positions, joint_pos ,self.current_joint_velocities, self.step_size, self.joint)):
             print("This position is not safe to be executed, skipping command.")
             return
 

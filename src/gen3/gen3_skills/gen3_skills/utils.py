@@ -30,17 +30,43 @@ GRIPPER_CTRL_JOINT_ID = 9
 GRIPPER_OPEN = 0.0
 GRIPPER_CLOSE = 0.8
 
-#define the limits for the arm joints
-MAX_VELOCITY = 2.0 #rad/s
-MAX_ACCELERATION = 5.0 #rad/s^2
+#Temporarily here: load the limits for joints and their velocity from URDF file
+from urdf_parser_py.urdf import URDF 
+
+def read_joint_limits(filepath):
+    robot = URDF.from_xml_file(filepath)
+    joint_limits = {}
+
+    for joint in robot.joints:
+        if joint.type in ["revolute", "continuous", "prismatic"] and joint.limit:
+            joint_limits[joint.name] = {"lower": joint.limit.lower, "upper": joint.limit.upper, "effort": joint.limit.effort , "velocity": joint.limit.velocity}
+
+    return joint_limits
+
+#to avoid joint names mismatch
+def normalize_urdf_name(urdf_name):
+    if urdf_name.startswith("gen3_"):
+        return urdf_name.replace("gen3_", "")
+    else:
+        return urdf_name
+
 
 def safety_arm_check(current_joint_positions, joint_pos, current_joint_velocities, step_size):
     """Checks if the joint implied velocity adn acceleration are within a safe range,
     which implies that the torque is in the safe range and prevents the hardware shoutdown."""
 
-    for i in range(len(joint_pos)-1):
+    joint_limits = read_joint_limits("/home/iras/IRAS-Kinova/src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
+
+
+    for i, joint_name in enumerate(ARM_JOINTS):
+        velocity_lim = joint_limits[joint_name]["velocity"]
+        lower_lim = joint_limits[joint_name]["lower"]
+        upper_lim = joint_limits[joint_name]["upper"]
+        #dt = step_size in that case
+        acceleration_lim = velocity_lim - current_joint_velocities[i] / step_size
         implied_velocity = (joint_pos[i] - current_joint_positions[i]) / step_size
         implied_acceleration = (implied_velocity - current_joint_velocities[i]) / step_size
-        if abs(implied_velocity) > MAX_VELOCITY or abs(implied_acceleration) > MAX_ACCELERATION:
+        if abs(implied_velocity) > velocity_lim or abs(implied_acceleration) > acceleration_lim or joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
             return False
-    return True
+        else:
+            return True

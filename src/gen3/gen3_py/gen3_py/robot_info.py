@@ -37,9 +37,14 @@ class RobotInfoPublisher(Node):
         self.joint_traj_pub = self.create_publisher(
             JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
         )
+        waiting_count = 0
         while self.joint_traj_pub.get_subscription_count() == 0:
-            self.get_logger().info("Waiting for /joint_trajectory_controller/joint_trajectory subscribers...")
             time.sleep(0.1)
+            waiting_count += 1
+            if waiting_count > 50:
+                self.get_logger().info("Waiting for /joint_trajectory_controller/joint_trajectory subscribers...")
+                waiting_count = 0
+
         self.publish_initial_joint_state()
 
         self.pub = self.create_publisher(RobotInfo, "/robot_info", 10)

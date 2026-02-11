@@ -31,10 +31,11 @@ class JacobianPublisher(Node):
 
         self.robot = URDF.from_xml_string(urdf_xml)
         self.ok, self.tree = treeFromUrdfModel(self.robot)
-        self.articulated_joints = [j.name for j in self.robot.joints if j.limit]
-        self.num_joints = len(self.articulated_joints)
 
-        self.has_all_joint_data = False
+        self.articulated_joints = None
+        self.num_joints = None
+
+        self._wait_count = 0
 
     def joint_callback(self, msg: JointState) -> None:
         """Recieve a JointState message and publish the Jacobian Transform between all joints.
@@ -46,13 +47,18 @@ class JacobianPublisher(Node):
         self.joint_pos = {}
         for i, j in enumerate(msg.name):
             self.joint_pos[j] = msg.position[i]
+        self.num_joints = len(self.joint_pos)
 
-        if not self.has_all_joint_data:
-            for j in self.articulated_joints:
-                if j not in self.joint_pos.keys():
-                    self.get_logger().info(f"Waiting for joint info from `{j}`...")
-                    return
-            self.has_all_joint_data = True
+
+        # if not self.has_all_joint_data:
+        #     for j in self.articulated_joints:
+        #         if j not in self.joint_pos.keys():
+        #             self._wait_count += 1
+        #             self.get_logger().info(f"Waiting for joint info from `{j}`...")
+        #             if self._wait_count > 1000:
+        #                 self._wait_count = 0
+        #             return
+        #     self.has_all_joint_data = True
 
         jacobians = []
         for link in self.robot.links:
@@ -68,6 +74,7 @@ class JacobianPublisher(Node):
         jacobian_msg.rows = jacobians.shape[1]
         jacobian_msg.cols = jacobians.shape[2]
         self.pub.publish(jacobian_msg)
+        # self.get_logger().info(f"Published Jacobian for {jacobian_msg.num_links} links.")
 
     def kdl_to_np(self, jac: PyKDL.Jacobian) -> np.ndarray:
         """Convert a PyKDL Jacobian object to a numpy ndarray.
@@ -102,7 +109,10 @@ class JacobianPublisher(Node):
 
         jacobian = PyKDL.Jacobian(chain.getNrOfJoints())
         jac_solver = PyKDL.ChainJntToJacSolver(chain)
-        jac_solver.JntToJac(self.joints_to_kdl(chain, positions=positions), jacobian)
+        joints_kdl = self.joints_to_kdl(chain, positions=positions)
+        if joints_kdl is None:
+            return np.full(shape=(6, self.num_joints), fill_value=np.nan)
+        jac_solver.JntToJac(joints_kdl, jacobian)
 
         return self.kdl_to_np(jacobian)
 
@@ -128,7 +138,7 @@ class JacobianPublisher(Node):
 
         return filtered_chain
 
-    def joints_to_kdl(self, chain: PyKDL.Chain, positions: dict = None) -> PyKDL.JntArray:
+    def joints_to_kdl(self, chain: PyKDL.Chain, positions: dict = None) -> PyKDL.JntArray | None:
         """Returns a KDL array of joint positions.
 
         Args:
@@ -138,7 +148,10 @@ class JacobianPublisher(Node):
             A KDL Joint Array containing those positions"""
         kdl_array = PyKDL.JntArray(chain.getNrOfJoints())
         for i in range(chain.getNrOfJoints()):
-            kdl_array[i] = positions[chain.getSegment(i).getJoint().getName()]
+            joint_name = chain.getSegment(i).getJoint().getName()
+            if joint_name not in positions.keys(): # TODO: more robustly handle non-articulated joints in chain
+                return None
+            kdl_array[i] = positions[joint_name]
         return kdl_array
 
 
