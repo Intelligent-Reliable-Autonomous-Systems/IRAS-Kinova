@@ -39,8 +39,13 @@ def read_joint_limits(filepath):
 
     for joint in robot.joints:
         if joint.type in ["revolute", "continuous", "prismatic"] and joint.limit:
-            joint_limits[joint.name] = {"lower": joint.limit.lower, "upper": joint.limit.upper, "effort": joint.limit.effort , "velocity": joint.limit.velocity}
-
+            name = normalize_urdf_name(joint.name)
+            joint_limits[name] = {
+                "lower": joint.limit.lower,
+                "upper": joint.limit.upper,
+                "effort": joint.limit.effort,
+                "velocity": joint.limit.velocity,
+            }
     return joint_limits
 
 #to avoid joint names mismatch
@@ -56,17 +61,33 @@ def safety_arm_check(current_joint_positions, joint_pos, current_joint_velocitie
     which implies that the torque is in the safe range and prevents the hardware shoutdown."""
 
     joint_limits = read_joint_limits("/home/iras/IRAS-Kinova/src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
-
+    
 
     for i, joint_name in enumerate(ARM_JOINTS):
+        
         velocity_lim = joint_limits[joint_name]["velocity"]
         lower_lim = joint_limits[joint_name]["lower"]
         upper_lim = joint_limits[joint_name]["upper"]
+        print(f"Upper limit: {upper_lim}")
+        print(f"Lower limit: {lower_lim}")
+        print(f"Velocity limit: {velocity_lim}")
         #dt = step_size in that case
-        acceleration_lim = velocity_lim - current_joint_velocities[i] / step_size
         implied_velocity = (joint_pos[i] - current_joint_positions[i]) / step_size
-        implied_acceleration = (implied_velocity - current_joint_velocities[i]) / step_size
-        if abs(implied_velocity) > velocity_lim or abs(implied_acceleration) > acceleration_lim or joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
+        if abs(implied_velocity) > velocity_lim or joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
             return False
-        else:
-            return True
+        
+    return True
+
+# if __name__ == "__main__":
+#     import numpy as np
+
+#     print("Running safety_arm_check test...")
+
+#     current_pos = np.zeros(7)
+#     current_vel = np.zeros(7)
+#     step = 0.02
+
+#     joint_pos = np.array([0, 0.3, 500, 0.3, 5, 0.3, 0])
+#     result = safety_arm_check(current_pos, joint_pos, current_vel, step)
+
+#     print("Test result:", result)

@@ -107,7 +107,10 @@ class PolicyController(Node):
 
         # Get simulation joint positions from the robot's forward model
         joint_pos = self.forward(self.step_size, self.target_pos)
-        #ADD SAFETY CHECK 
+        joint_pos = np.array([0, 100, 0.8, 60, 0.3, 0, 0])
+        #ADD SAFETY CHECK
+        check = safety_arm_check(self.current_joint_positions, joint_pos, self.current_joint_velocities, self.step_size, self.joint)
+        print(f"Safety check returned: {check}")
         if(not safety_arm_check(self.current_joint_positions, joint_pos ,self.current_joint_velocities, self.step_size, self.joint)):
             print("This position is not safe to be executed, skipping command.")
             return
