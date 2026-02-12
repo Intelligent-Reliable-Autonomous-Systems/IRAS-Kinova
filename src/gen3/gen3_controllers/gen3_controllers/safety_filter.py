@@ -17,7 +17,6 @@ from urdf_parser_py.urdf import URDF
 from gen3_skills.utils import ARM_JOINTS
 
 class SafetyFilter(Node):
-    #subscribers and publisher
     def __init__(self):
         super().__init__("safety_filter")
         self.in_topic = "/cmd_safety"
@@ -34,13 +33,15 @@ class SafetyFilter(Node):
 
 
     def state_cb(self, msg: JointState):
-        ''''''
+        '''Callback for states
+        Runs automatically when receives the joint states'''
         self.current_pos = np.array(msg.position[:7], dtype=np.float32)
         self.current_vel = np.array(msg.velocity[:7], dtype=np.float32)
 
 
     def cmd_cb(self, msg: JointTrajectory):
-        '''Publishing callback'''
+        '''Publishing callback
+        Runs when the message is published to cmd_safety'''
         if self.current_pos is None or self.current_vel is None:
             self.get_logger().warn("No joint state yet; dropping command.")
             return
@@ -87,7 +88,7 @@ class SafetyFilter(Node):
     def safety_arm_check(self, current_joint_positions, joint_pos, current_joint_velocities, step_size):
         """Checks if the joint implied velocity adn acceleration are within a safe range,
         which implies that the torque is in the safe range and prevents the hardware shoutdown."""
-        joint_limits = self.read_joint_limits("/home/iras/IRAS-Kinova/src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
+        joint_limits = self.read_joint_limits("./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
         
         for i, joint_name in enumerate(ARM_JOINTS):
             velocity_lim = joint_limits[joint_name]["velocity"]
