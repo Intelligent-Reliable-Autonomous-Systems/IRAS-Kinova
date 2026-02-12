@@ -26,6 +26,7 @@ setup(
             "gen3_reach = gen3_controllers.gen3_reach:main",
             "gen3_reach_isaac = gen3_controllers.isaac.gen3_reach_isaac:main",
             "gen3_reach_nogripper = gen3_controllers.no_gripper.gen3_reach_nogripper:main",
+            'safety_filter = gen3_controllers.safety_filter:main',
         ],
     },
 )

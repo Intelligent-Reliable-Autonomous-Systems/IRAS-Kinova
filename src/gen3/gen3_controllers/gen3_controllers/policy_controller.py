@@ -28,8 +28,7 @@ from typing import List, Tuple
 import sys
 import yaml
 import itertools
-
-from gen3.gen3_skills.gen3_skills.utils import safety_arm_check
+import safety_filter
 import rclpy
 from rclpy.node import Node
 
@@ -53,7 +52,7 @@ class PolicyController(Node):
         super().__init__(name)
 
         self.declare_parameter("state_topic", "/joint_states")
-        self.declare_parameter("cmd_topic", "/joint_trajectory_controller/joint_trajectory")
+        self.declare_parameter("cmd_topic", "/cmd_safety")
         self.declare_parameter("min_traj_dur", 1.0)
         self.declare_parameter("step_size", 0.02)
         self.declare_parameter("isaac", False)  # If running in isaacsim
@@ -107,14 +106,6 @@ class PolicyController(Node):
 
         # Get simulation joint positions from the robot's forward model
         joint_pos = self.forward(self.step_size, self.target_pos)
-        joint_pos = np.array([0, 100, 0.8, 60, 0.3, 0, 0])
-        #ADD SAFETY CHECK
-        check = safety_arm_check(self.current_joint_positions, joint_pos, self.current_joint_velocities, self.step_size, self.joint)
-        print(f"Safety check returned: {check}")
-        if(not safety_arm_check(self.current_joint_positions, joint_pos ,self.current_joint_velocities, self.step_size, self.joint)):
-            print("This position is not safe to be executed, skipping command.")
-            return
-
 
         if joint_pos is not None:
             if len(joint_pos) != self.num_actions:
