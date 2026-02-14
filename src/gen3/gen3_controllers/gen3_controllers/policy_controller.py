@@ -28,7 +28,7 @@ from typing import List, Tuple
 import sys
 import yaml
 import itertools
-import safety_filter
+from gen3_controllers import safety_filter
 import rclpy
 from rclpy.node import Node
 
@@ -53,12 +53,15 @@ class PolicyController(Node):
 
         self.declare_parameter("state_topic", "/joint_states")
         self.declare_parameter("cmd_topic", "/cmd_safety")
-        self.declare_parameter("min_traj_dur", 1.0)
-        self.declare_parameter("step_size", 0.02)
+        # self.declare_parameter("cmd_topic", "/joint_trajectory_controller/joint_trajectory")
+        self.declare_parameter("traj_dur_sec", 0)
+        self.declare_parameter("traj_dur_nsec", int(1e9))
+        self.declare_parameter("step_size", 0.1)
         self.declare_parameter("isaac", False)  # If running in isaacsim
         self.state_topic = self.get_parameter("state_topic").value
         self.cmd_topic = self.get_parameter("cmd_topic").value
-        self.min_traj_dur = self.get_parameter("min_traj_dur").value
+        self.traj_dur_sec = self.get_parameter("traj_dur_sec").value
+        self.traj_dur_nsec = self.get_parameter("traj_dur_nsec").value
         self.step_size = self.get_parameter("step_size").value
         self.isaac = self.get_parameter("isaac").value
 
@@ -70,6 +73,9 @@ class PolicyController(Node):
         self.traj_pub = self.create_publisher(self.TRAJ_TOPIC_TYPE, self.cmd_topic, 10)
         self.timer = self.create_timer(self.step_size, self.robot_cmd_callback)
         self.gripper_action_client = ActionClient(self, GripperCommand, "/robotiq_gripper_controller/gripper_cmd")
+        self.get_logger().info("Waiting for gripper server...")
+        # self.gripper_action_client.wait_for_server()
+        self.get_logger().info("Gripper server ready.")
 
         self.get_logger().info(f"Initialized {name} policy controller")
         self.has_joint_data = False
@@ -121,20 +127,20 @@ class PolicyController(Node):
 
                     point = JointTrajectoryPoint()
                     point.positions = joint_pos.tolist()[: len(self.arm_actions)]
-                    point.time_from_start = Duration(sec=1, nanosec=0)
+                    point.time_from_start = Duration(sec=self.traj_dur_sec, nanosec=self.traj_dur_nsec)
 
                     traj.points.append(point)
                     self.send_gripper_goal(position=joint_pos[-1])
+
                 self.traj_pub.publish(traj)
+
         else:
-            pass
-            # self.get_logger().info("Joint positions are `None`")
+            self.get_logger().info("Joint positions are `None`")
 
     def send_gripper_goal(self, position: float = 0.0, max_effort: float = 100.0) -> None:
         """
         Send position goal to the gripper
         """
-        self.gripper_action_client.wait_for_server()
 
         goal_msg = GripperCommand.Goal()
         goal_msg.command.position = position

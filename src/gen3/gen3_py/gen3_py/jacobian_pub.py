@@ -49,7 +49,6 @@ class JacobianPublisher(Node):
             self.joint_pos[j] = msg.position[i]
         self.num_joints = len(self.joint_pos)
 
-
         # if not self.has_all_joint_data:
         #     for j in self.articulated_joints:
         #         if j not in self.joint_pos.keys():
@@ -149,7 +148,7 @@ class JacobianPublisher(Node):
         kdl_array = PyKDL.JntArray(chain.getNrOfJoints())
         for i in range(chain.getNrOfJoints()):
             joint_name = chain.getSegment(i).getJoint().getName()
-            if joint_name not in positions.keys(): # TODO: more robustly handle non-articulated joints in chain
+            if joint_name not in positions.keys():  # TODO: more robustly handle non-articulated joints in chain
                 return None
             kdl_array[i] = positions[joint_name]
         return kdl_array

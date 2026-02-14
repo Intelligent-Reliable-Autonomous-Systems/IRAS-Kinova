@@ -16,6 +16,7 @@ from sensor_msgs.msg import JointState
 from urdf_parser_py.urdf import URDF
 from gen3_skills.utils import ARM_JOINTS
 
+
 class SafetyFilter(Node):
     def __init__(self):
         super().__init__("safety_filter")
@@ -31,17 +32,22 @@ class SafetyFilter(Node):
 
         self.get_logger().info(f"SafetyFilter: {self.in_topic} -> {self.out_topic}")
 
+        self.joint_limits = self.read_joint_limits(
+            "./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf"
+        )
+
+        self.get_logger().info(f"{self.joint_limits}")
 
     def state_cb(self, msg: JointState):
-        '''Callback for states
-        Runs automatically when receives the joint states'''
+        """Callback for states
+        Runs automatically when receives the joint states"""
         self.current_pos = np.array(msg.position[:7], dtype=np.float32)
         self.current_vel = np.array(msg.velocity[:7], dtype=np.float32)
-
+        self.current_torq = np.array(msg.effort[:7], dtype=np.float32)
 
     def cmd_cb(self, msg: JointTrajectory):
-        '''Publishing callback
-        Runs when the message is published to cmd_safety'''
+        """Publishing callback
+        Runs when the message is published to cmd_safety"""
         if self.current_pos is None or self.current_vel is None:
             self.get_logger().warn("No joint state yet; dropping command.")
             return
@@ -58,10 +64,9 @@ class SafetyFilter(Node):
         else:
             self.get_logger().warn("BLOCKED: unsafe command")
 
-
     def read_joint_limits(self, filepath):
-        '''Read joint limits from the URDF file and normalizes the names
-        from gen3_joint_1 to joint_1 that we use.'''
+        """Read joint limits from the URDF file and normalizes the names
+        from gen3_joint_1 to joint_1 that we use."""
         robot = URDF.from_xml_file(filepath)
         joint_limits = {}
 
@@ -76,37 +81,42 @@ class SafetyFilter(Node):
                 }
         return joint_limits
 
-
-    #to avoid joint names mismatch
+    # to avoid joint names mismatch
     def normalize_urdf_name(self, urdf_name):
         if urdf_name.startswith("gen3_"):
             return urdf_name.replace("gen3_", "")
         else:
             return urdf_name
 
-
     def safety_arm_check(self, current_joint_positions, joint_pos, current_joint_velocities, step_size):
         """Checks if the joint implied velocity adn acceleration are within a safe range,
         which implies that the torque is in the safe range and prevents the hardware shoutdown."""
-        joint_limits = self.read_joint_limits("./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
-        
+
         for i, joint_name in enumerate(ARM_JOINTS):
-            velocity_lim = joint_limits[joint_name]["velocity"]
-            lower_lim = joint_limits[joint_name]["lower"]
-            upper_lim = joint_limits[joint_name]["upper"]
+            velocity_lim = self.joint_limits[joint_name]["velocity"]
+            lower_lim = self.joint_limits[joint_name]["lower"]
+            upper_lim = self.joint_limits[joint_name]["upper"]
+            effort_lim = self.joint_limits[joint_name]["effort"]
             print(f"Upper limit: {upper_lim}")
             print(f"Lower limit: {lower_lim}")
             print(f"Velocity limit: {velocity_lim}")
+            print(f"Torque limit: {effort_lim}")
 
-            #check for continuous joints
+            # check for continuous joints
             if lower_lim == upper_lim:
                 self.get_logger().warn(f"Skipping {joint_name} due to zero-range limits")
                 continue
 
-            #dt = step_size in that case
+            # dt = step_size in that case
             implied_velocity = (joint_pos[i] - current_joint_positions[i]) / step_size
-            if abs(implied_velocity) > velocity_lim or joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
-                print(f"{joint_name} exceeds the limits")
+            if abs(implied_velocity) > velocity_lim:
+                self.get_logger().info(f"{joint_name} exceeds allowable velocity")
+                return False
+            if joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
+                self.get_logger().info(f"{joint_name} exceeds allowable joint limits")
+                return False
+            if self.current_torq[i] > effort_lim:
+                print(f"{joint_name} exceeds the torque limits")
                 return False
         return True
 
@@ -117,6 +127,7 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
