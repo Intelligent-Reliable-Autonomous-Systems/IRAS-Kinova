@@ -9,6 +9,8 @@
 
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
+  <depend>iras_realsense_msgs</depend>
+  <depend>tf2_ros</depend>
   <depend>realsense2_camera</depend>
   <!-- <depend>usb_cam</depend>
   <depend>image_transport</depend>

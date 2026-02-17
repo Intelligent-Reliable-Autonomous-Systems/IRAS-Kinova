@@ -30,11 +30,22 @@ def launch_setup(context, *args, **kwargs):
     # Packages to load
     pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
+    pkg_realsense = get_package_share_directory("iras_realsense")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     robot_ip = LaunchConfiguration("robot_ip")
     default_joint_pos = LaunchConfiguration("default_joint_pos")
+    use_table_camera = LaunchConfiguration("use_table_camera")
+    table_camera_world_frame = LaunchConfiguration("table_camera_world_frame")
+    table_camera_frame = LaunchConfiguration("table_camera_frame")
+    table_camera_x = LaunchConfiguration("table_camera_x")
+    table_camera_y = LaunchConfiguration("table_camera_y")
+    table_camera_z = LaunchConfiguration("table_camera_z")
+    table_camera_qx = LaunchConfiguration("table_camera_qx")
+    table_camera_qy = LaunchConfiguration("table_camera_qy")
+    table_camera_qz = LaunchConfiguration("table_camera_qz")
+    table_camera_qw = LaunchConfiguration("table_camera_qw")
 
     robot_controllers = PathJoinSubstitution(
         # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
@@ -93,6 +104,22 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration("vision")),
     )
 
+    table_camera_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "static_table_depth.py"])),
+        launch_arguments={
+            "world_frame": table_camera_world_frame,
+            "camera_frame": table_camera_frame,
+            "camera_x": table_camera_x,
+            "camera_y": table_camera_y,
+            "camera_z": table_camera_z,
+            "camera_qx": table_camera_qx,
+            "camera_qy": table_camera_qy,
+            "camera_qz": table_camera_qz,
+            "camera_qw": table_camera_qw,
+        }.items(),
+        condition=IfCondition(use_table_camera),
+    )
+
     ee_publisher = Node(
         package="gen3_py",
         executable="ee_pub",
@@ -148,6 +175,7 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_launch = [
         kinova_arm_launch,
         kinova_vision_launch,
+        table_camera_launch,
         move_group_node,
         ee_publisher,
         robot_info_publisher,
@@ -194,5 +222,24 @@ def generate_launch_description():
             description="Default joint positions of the robot",
         )
     )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_table_camera",
+            default_value="false",
+            description="If to launch table camera and RGB-D snapshot service",
+        )
+    )
+    declared_arguments.append(DeclareLaunchArgument("table_camera_world_frame", default_value="world"))
+    declared_arguments.append(
+        DeclareLaunchArgument("table_camera_frame", default_value="table_camera_link")
+    )
+    declared_arguments.append(DeclareLaunchArgument("table_camera_x", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_y", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_z", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_qx", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_qy", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_qz", default_value="0.0"))
+    declared_arguments.append(DeclareLaunchArgument("table_camera_qw", default_value="1.0"))
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
