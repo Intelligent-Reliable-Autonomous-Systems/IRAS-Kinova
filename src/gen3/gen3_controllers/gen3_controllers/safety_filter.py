@@ -15,15 +15,25 @@ from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from urdf_parser_py.urdf import URDF
 from gen3_skills.utils import ARM_JOINTS
+from trajectory_msgs.msg import JointTrajectoryPoint
+from builtin_interfaces.msg import Duration
+
+#git commit --author="Natalia Zaitseva <zaitsevn@oregonstate.edu>" -m "message"
 
 
 class SafetyFilter(Node):
     def __init__(self):
+        #make them not parameters back
         super().__init__("safety_filter")
         self.in_topic = "/cmd_safety"
         self.out_topic = "/joint_trajectory_controller/joint_trajectory"
         self.state_topic = "/joint_states"
         self.traj_dt = 1.0
+
+        #self.in_topic = self.declare_parameter("in_topic", "/cmd_safety").value
+        #self.out_topic = self.declare_parameter("out_topic", "/joint_trajectory_controller/joint_trajectory").value
+        #self.state_topic = self.declare_parameter("state_topic", "/joint_states").value
+        #self.traj_dt = self.declare_parameter("traj_dt", 1.0).value
         self.current_pos = None
         self.current_vel = None
         self.state_sub = self.create_subscription(JointState, self.state_topic, self.state_cb, 10)
@@ -48,6 +58,9 @@ class SafetyFilter(Node):
     def cmd_cb(self, msg: JointTrajectory):
         """Publishing callback
         Runs when the message is published to cmd_safety"""
+
+        self.get_logger().info(f"Got cmd on {self.in_topic}")
+
         if self.current_pos is None or self.current_vel is None:
             self.get_logger().warn("No joint state yet; dropping command.")
             return
@@ -56,13 +69,31 @@ class SafetyFilter(Node):
             self.get_logger().warn("Bad trajectory message; dropping.")
             return
 
-        target = np.array(msg.points[0].positions[:7], dtype=np.float32)
-        safe = self.safety_arm_check(self.current_pos, target, self.current_vel, self.traj_dt)
+        point = msg.points[0]
+
+        target = np.array(point.positions[:7], dtype=np.float32)
+        dt = point.time_from_start.sec + point.time_from_start.nanosec * 1e-9
+
+        if dt <= 0.0:
+            self.get_logger().warn("Invalid trajectory time; dropping command.")
+            return
+
+        safe = self.safety_arm_check(self.current_pos, target, self.current_vel, dt)
+
         if safe:
             self.get_logger().info("SAFE: forwarding")
             self.cmd_pub.publish(msg)
         else:
             self.get_logger().warn("BLOCKED: unsafe command")
+            #override the command with the current position to stop the robot
+            stop_msg = JointTrajectory()
+            stop_msg.joint_names = list(ARM_JOINTS)
+            stop_point = JointTrajectoryPoint()
+            stop_point.positions = self.current_pos.tolist()
+            stop_point.velocities = [0.0] * len(self.current_pos)
+            stop_point.time_from_start = Duration(sec=0, nanosec=100_000_000)
+            stop_msg.points = [stop_point]
+            self.cmd_pub.publish(stop_msg)
 
     def read_joint_limits(self, filepath):
         """Read joint limits from the URDF file and normalizes the names
@@ -111,12 +142,14 @@ class SafetyFilter(Node):
             implied_velocity = (joint_pos[i] - current_joint_positions[i]) / step_size
             if abs(implied_velocity) > velocity_lim:
                 self.get_logger().info(f"{joint_name} exceeds allowable velocity")
+                self.get_logger().info(f"Velocity is {implied_velocity}")
                 return False
             if joint_pos[i] < lower_lim or joint_pos[i] > upper_lim:
                 self.get_logger().info(f"{joint_name} exceeds allowable joint limits")
+                self.get_logger().info(f"Unsafe position is {joint_pos[i]}")
                 return False
             if self.current_torq[i] > effort_lim:
-                print(f"{joint_name} exceeds the torque limits")
+                self.get_logger().info(f"{joint_name} exceeds the torque limits")
                 return False
         return True
 

@@ -15,3 +15,26 @@ ros2 run gen3_controllers safety_filter
 ```
 
 Can be ran in the background together with Gazebo or the arm itself.
+
+Safe command to test:
+ros2 topic pub /cmd_safety trajectory_msgs/msg/JointTrajectory "{
+joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
+points: [
+  {
+    positions: [0.0, 0.5, 0.0, 0.5, 0.0, 0.3, 0.0],
+    time_from_start: { sec: 5 }
+  }
+]
+}" -1
+
+
+Unsafe command to test:
+ros2 topic pub /cmd_safety trajectory_msgs/msg/JointTrajectory "{
+joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
+points: [
+  {
+    positions: [0.0, 3.0, 0.0, 0.5, 0.0, 0.3, 0.0],
+    time_from_start: { sec: 5 }
+  }
+]
+}" -1
