@@ -17,23 +17,24 @@ from urdf_parser_py.urdf import URDF
 from gen3_skills.utils import ARM_JOINTS
 from trajectory_msgs.msg import JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
+from rcl_interfaces.msg import SetParametersResult
 
-#git commit --author="Natalia Zaitseva <zaitsevn@oregonstate.edu>" -m "message"
 
 
 class SafetyFilter(Node):
     def __init__(self):
         #make them not parameters back
         super().__init__("safety_filter")
-        self.in_topic = "/cmd_safety"
-        self.out_topic = "/joint_trajectory_controller/joint_trajectory"
-        self.state_topic = "/joint_states"
-        self.traj_dt = 1.0
+        #self.in_topic = "/cmd_safety"
+        #self.out_topic = "/joint_trajectory_controller/joint_trajectory"
+        #self.state_topic = "/joint_states"
+        #self.traj_dt = 1.0
 
-        #self.in_topic = self.declare_parameter("in_topic", "/cmd_safety").value
-        #self.out_topic = self.declare_parameter("out_topic", "/joint_trajectory_controller/joint_trajectory").value
-        #self.state_topic = self.declare_parameter("state_topic", "/joint_states").value
-        #self.traj_dt = self.declare_parameter("traj_dt", 1.0).value
+        #declare parameters and also get/store them
+        self.in_topic = self.declare_parameter("in_topic", "/cmd_safety").value
+        self.out_topic = self.declare_parameter("out_topic", "/joint_trajectory_controller/joint_trajectory").value
+        self.state_topic = self.declare_parameter("state_topic", "/joint_states").value
+        self.traj_dt = self.declare_parameter("traj_dt", 1.0).value
         self.current_pos = None
         self.current_vel = None
         self.state_sub = self.create_subscription(JointState, self.state_topic, self.state_cb, 10)
@@ -46,7 +47,26 @@ class SafetyFilter(Node):
             "./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf"
         )
 
+        #add parameter callback
+        self.add_on_set_parameters_callback(self.on_param_change)
+
         self.get_logger().info(f"{self.joint_limits}")
+
+    def on_param_change(self, parameters):
+        for param in parameters:
+            if param.name == "traj_dt":
+                self.traj_dt = param.value
+                self.get_logger().info(f"Updated traj_dt to {self.traj_dt}")
+            elif param.name == "in_topic":
+                self.in_topic = param.value
+                self.get_logger().info(f"Updated in_topic to {self.in_topic}")
+            elif param.name == "out_topic":
+                self.out_topic = param.value
+                self.get_logger().info(f"Updated out_topic to {self.out_topic}")
+            elif param.name == "state_topic":
+                self.state_topic = param.value
+                self.get_logger().info(f"Updated state_topic to {self.state_topic}")
+        return SetParametersResult(successful=True)
 
     def state_cb(self, msg: JointState):
         """Callback for states
