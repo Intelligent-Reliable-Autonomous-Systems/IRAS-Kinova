@@ -16,6 +16,9 @@ find_package(rosidl_default_generators REQUIRED)
 add_executable(gen3_reset src/gen3_reset.cpp)
 ament_target_dependencies(gen3_reset rclcpp trajectory_msgs sensor_msgs)
 
+add_executable(collision_check src/collision_check.cpp)
+ament_target_dependencies(collision_check rclcpp trajectory_msgs sensor_msgs)
+
 set(msg_files
   "msg/KeyFloat.msg"
   "msg/ParamDict.msg"
@@ -37,6 +40,7 @@ ament_export_include_directories(include)
 
 install(TARGETS
   gen3_reset
+  collision_check
   DESTINATION lib/${PROJECT_NAME})
 
 
