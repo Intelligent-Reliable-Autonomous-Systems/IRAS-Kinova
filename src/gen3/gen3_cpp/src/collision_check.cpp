@@ -1,38 +1,49 @@
+/**
+collision_check.cpp
+
+THe file to check for obstacles, and to avoid them.
+Going to use MoveIt2 library and ROS2 Geometry Package
+to set collision boxes.
+
+Author: Natalia Zaitseva
+
+
+Command to test:
+
+**/
+
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
-#include <chrono>
-#include <functional>
+#include "trajectory_msgs/msg/joint_trajectory.hpp"
 
-using namespace std::chrono_literals;
+using namespace std;
 
-class SimplePublisher : public rclcpp::Node
-{
+class CollisionCheck : public rclcpp::Node {
 public:
-  SimplePublisher()
-  : Node("simple_publisher_node"), count_(0)
-  {
-    publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
-    timer_ = this->create_wall_timer(
-      500ms, std::bind(&SimplePublisher::timer_callback, this));
+  CollisionCheck()
+  : Node("collision_check") {
+    sub_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>("/collision_policy", 10, bind(&CollisionCheck::callback, this, placeholders::_1));
+
+    pub_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>("/filtered_policy", 10);
+
+    RCLCPP_INFO(this->get_logger(), "Collision check node started");
   }
 
-private:
-  void timer_callback()
-  {
-    auto message = std_msgs::msg::String();
-    message.data = "Hello, world! " + std::to_string(count_++);
-    RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-    publisher_->publish(message);
+  private:
+    void callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg) {
+      RCLCPP_INFO(this->get_logger(), "Forwarding the function");
+      pub_->publish(*msg);
   }
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-  size_t count_;
+
+  private:
+  //save subscriber and publisher instances so they don't get destroyed
+    rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_;
+    rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_;
 };
 
-int main(int argc, char * argv[])
-{
+
+int main(int argc, char * argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<SimplePublisher>());
+  rclcpp::spin(std::make_shared<CollisionCheck>());
   rclcpp::shutdown();
   return 0;
 }
