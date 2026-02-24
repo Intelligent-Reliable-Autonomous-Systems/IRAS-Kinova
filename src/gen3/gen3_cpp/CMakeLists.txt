@@ -19,9 +19,9 @@ ament_target_dependencies(gen3_reset rclcpp trajectory_msgs sensor_msgs)
 set(msg_files
   "msg/KeyFloat.msg"
   "msg/ParamDict.msg"
-  "msg/Jacobian.msg"
+  "msg/LinkMatrix.msg"
   "msg/RobotInfo.msg"
-  "msg/BodyPose.msg"
+  "msg/BodyInfo.msg"
   "msg/Params.msg"
   "srv/ParamSkill.srv"
 )

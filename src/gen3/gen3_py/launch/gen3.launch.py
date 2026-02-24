@@ -231,9 +231,7 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(DeclareLaunchArgument("table_camera_world_frame", default_value="world"))
-    declared_arguments.append(
-        DeclareLaunchArgument("table_camera_frame", default_value="table_camera_link")
-    )
+    declared_arguments.append(DeclareLaunchArgument("table_camera_frame", default_value="table_camera_link"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_x", default_value="0.0"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_y", default_value="0.0"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_z", default_value="0.0"))
