@@ -63,9 +63,11 @@ class JacobianPublisher(Node):
         for link in self.robot.links:
             if link.name == "world":
                 continue
-            jac, mass, vel, gravity = self.jacobian_mass_vel(
-                link_name=link.name, positions=self.joint_pos, velocities=self.joint_vel
-            )
+            if "robotiq_85_left" in link.name or "robotiq_85_right" in link.name:
+                continue
+
+            jac, mass, vel, gravity = self.jacobian_mass_vel(link_name=link.name, positions=self.joint_pos, velocities=self.joint_vel)
+            
             jacobians.append(jac)
             vels.append(vel)
             masses.append(mass)
@@ -180,19 +182,13 @@ class JacobianPublisher(Node):
         # Compute the mass matrix
         mass = PyKDL.JntSpaceInertiaMatrix(chain.getNrOfJoints())
         dyn_solver.JntToMass(joints_kdl, mass)
-
-        return (
-            self.kdl_to_np(jacobian),
-            self.kdl_to_np_mass(mass),
-            np.concatenate(
+        return self.kdl_to_np(jacobian), self.kdl_to_np_mass(mass), np.concatenate(
                 (
                     [twist.vel.x(), twist.vel.y(), twist.vel.z()],
                     self.rpy_to_quaternion_xyzw(twist.rot.x(), twist.rot.y(), twist.rot.z()),
                 ),
                 axis=0,
-            ),
-            np.array([gravity[i] for i in range(chain.getNrOfJoints())]),
-        )
+            ),np.array([gravity[i] for i in range(chain.getNrOfJoints())])
 
     def filter_fixed_joints_from_chain(self, chain: PyKDL.Chain) -> PyKDL.Chain:
         """Create a kinematic chain excluding fixed joints.
@@ -231,31 +227,6 @@ class JacobianPublisher(Node):
                 return None
             kdl_array[i] = positions[joint_name]
         return kdl_array
-
-    def get_body_vel_world(self, positions: dict = None, velocities: dict = None):
-        chain = self.tree.getChain("base_link", self.tip_link)
-        jac_solver = PyKDL.ChainJntToJacSolver(chain)
-
-        n_joints = chain.getNrOfJoints()
-        q = PyKDL.JntArray(n_joints)
-        dq = PyKDL.JntArray(n_joints)
-
-        for i in range(n_joints):
-            q[i] = positions[i]
-            dq[i] = velocities[i]
-
-        ee_frame = PyKDL.Frame()
-        fk_solver.JntToCart(q, ee_frame)
-        jacobian = PyKDL.Jacobian(n_joints)
-        jac_solver.JntToJac(q, jacobian)
-
-        twist = PyKDL.Twist()
-        for i in range(n_joints):
-            col = jacobian.getColumn(i)
-            twist.vel += col.vel * dq[i]
-            twist.rot += col.rot * dq[i]
-
-        return twist  # twist.vel = linear, twist.rot = angular
 
     def rpy_to_quaternion_xyzw(self, roll, pitch, yaw):
         cr, sr = np.cos(roll / 2), np.sin(roll / 2)
