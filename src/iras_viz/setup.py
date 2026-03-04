@@ -1,6 +1,8 @@
+import glob
+
 from setuptools import find_packages, setup
 
-package_name = "iras_realsense"
+package_name = "iras_viz"
 
 setup(
     name=package_name,
@@ -11,25 +13,23 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (
             "share/" + package_name + "/launch",
-            [
-                "launch/test.py",
-                "launch/rgbd_april.py",
-                "launch/static_table_depth.py",
-            ],
+            ["launch/table_scene.py"],
         ),
-        ("share/" + package_name + "/config", ["config/camera_info.yaml"]),
+        (
+            "share/" + package_name + "/data/apriltag",
+            glob.glob("data/apriltag/*.png"),
+        ),
     ],
-    install_requires=["setuptools", "transforms3d"],
+    install_requires=["setuptools"],
     zip_safe=True,
     maintainer="jjewett",
     maintainer_email="jewettje@oregonstate.edu",
-    description="An external realsense RGB-D camera for detecting objects in a manipulation workspace",
+    description="Visualization tools for the IRAS project",
     license="Apache-2.0",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "latest_rgbd_service = iras_realsense.latest_rgbd_service:main",
-            "camera_tf = iras_realsense.camera_tf:main",
+            "table_scene = iras_viz.table_scene_node:main",
         ],
     },
 )

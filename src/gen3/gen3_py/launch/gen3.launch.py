@@ -33,19 +33,11 @@ def launch_setup(context, *args, **kwargs):
     pkg_realsense = get_package_share_directory("iras_realsense")
 
     # Variables
-    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    robot_ip = LaunchConfiguration("robot_ip")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware", default="true")
+    robot_ip = LaunchConfiguration("robot_ip", default="192.168.8.10")
     default_joint_pos = LaunchConfiguration("default_joint_pos")
     use_table_camera = LaunchConfiguration("use_table_camera")
-    table_camera_world_frame = LaunchConfiguration("table_camera_world_frame")
-    table_camera_frame = LaunchConfiguration("table_camera_frame")
-    table_camera_x = LaunchConfiguration("table_camera_x")
-    table_camera_y = LaunchConfiguration("table_camera_y")
-    table_camera_z = LaunchConfiguration("table_camera_z")
-    table_camera_qx = LaunchConfiguration("table_camera_qx")
-    table_camera_qy = LaunchConfiguration("table_camera_qy")
-    table_camera_qz = LaunchConfiguration("table_camera_qz")
-    table_camera_qw = LaunchConfiguration("table_camera_qw")
+    rviz2 = LaunchConfiguration("rviz2", default="true")
 
     robot_controllers = PathJoinSubstitution(
         # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
@@ -104,19 +96,25 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration("vision")),
     )
 
+    # table_camera_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "static_table_depth.py"])),
+    #     launch_arguments={
+    #         "world_frame": table_camera_world_frame,
+    #         "camera_frame": table_camera_frame,
+    #         "camera_x": table_camera_x,
+    #         "camera_y": table_camera_y,
+    #         "camera_z": table_camera_z,
+    #         "camera_qx": table_camera_qx,
+    #         "camera_qy": table_camera_qy,
+    #         "camera_qz": table_camera_qz,
+    #         "camera_qw": table_camera_qw,
+    #     }.items(),
+    #     condition=IfCondition(use_table_camera),
+    # )
+
     table_camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "static_table_depth.py"])),
-        launch_arguments={
-            "world_frame": table_camera_world_frame,
-            "camera_frame": table_camera_frame,
-            "camera_x": table_camera_x,
-            "camera_y": table_camera_y,
-            "camera_z": table_camera_z,
-            "camera_qx": table_camera_qx,
-            "camera_qy": table_camera_qy,
-            "camera_qz": table_camera_qz,
-            "camera_qw": table_camera_qw,
-        }.items(),
+        PythonLaunchDescriptionSource(PathJoinSubstitution(
+            [pkg_realsense, "launch", "rgbd_april.py"])),
         condition=IfCondition(use_table_camera),
     )
 
@@ -170,6 +168,14 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    table_scene_node = Node(
+        package='iras_viz',
+        executable='table_scene',
+        name='table_scene_visualizer',
+        output='screen',
+        condition=IfCondition(rviz2),
+    )
+
     # rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
 
     nodes_to_launch = [
@@ -181,6 +187,7 @@ def launch_setup(context, *args, **kwargs):
         robot_info_publisher,
         body_pose_publisher,
         jacobian_publisher,
+        table_scene_node,
         # rosbridge_node,
     ]
 
