@@ -13,7 +13,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
 )
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
@@ -28,9 +28,9 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 def launch_setup(context, *args, **kwargs):
     # Packages to load
-    pkg_kortex_bringup = get_package_share_directory("kortex_bringup")
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
     pkg_realsense = get_package_share_directory("iras_realsense")
+    pkg_gen3py = get_package_share_directory("gen3_py")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
@@ -46,9 +46,10 @@ def launch_setup(context, *args, **kwargs):
     table_camera_qy = LaunchConfiguration("table_camera_qy")
     table_camera_qz = LaunchConfiguration("table_camera_qz")
     table_camera_qw = LaunchConfiguration("table_camera_qw")
-
+    launch_kortex_rviz = LaunchConfiguration("launch_kortex_rviz")
+    rviz_config_file_name = LaunchConfiguration("rviz_config_file")
+    robot_controller = LaunchConfiguration("robot_controller")
     robot_controllers = PathJoinSubstitution(
-        # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
         [
             FindPackageShare("kortex_description"),
             "arms/gen3/7dof/config",
@@ -87,12 +88,14 @@ def launch_setup(context, *args, **kwargs):
 
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_bringup, "launch", "gen3.launch.py"])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_gen3py, "launch", "kortex_gen3.launch.py"])),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
             "gripper": "robotiq_2f_85",
             "vision": "true",
+            "launch_rviz": launch_kortex_rviz,
+            "robot_controller": robot_controller
         }.items(),
     )
 
@@ -170,6 +173,19 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    rviz_config_file = PathJoinSubstitution(
+        [pkg_gen3py, "rviz", rviz_config_file_name]
+    )
+
+    rviz_node = Node(
+        package="rviz2",
+        condition=UnlessCondition(launch_kortex_rviz),
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+    )
+
     # rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
 
     nodes_to_launch = [
@@ -181,6 +197,7 @@ def launch_setup(context, *args, **kwargs):
         robot_info_publisher,
         body_pose_publisher,
         jacobian_publisher,
+        rviz_node
         # rosbridge_node,
     ]
 
@@ -195,7 +212,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "use_fake_hardware",
             default_value="true",
-            description="Use RViz2 for simulation",
+            description="If to only launch the fake hardware",
         )
     )
 
@@ -225,6 +242,14 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
+            "robot_controller",
+            default_value="joint_trajectory_controller",
+            description="Name of robot controller to start",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "use_table_camera",
             default_value="false",
             description="If to launch table camera and RGB-D snapshot service",
@@ -239,5 +264,11 @@ def generate_launch_description():
     declared_arguments.append(DeclareLaunchArgument("table_camera_qy", default_value="0.0"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_qz", default_value="0.0"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_qw", default_value="1.0"))
+    declared_arguments.append(
+        DeclareLaunchArgument("launch_kortex_rviz", default_value="false", description="Launch Kortex RViz?")
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument("rviz_config_file", default_value="view_robot_camera.rviz", description="Name of RViz file in gen3_py/rviz/")
+    )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
