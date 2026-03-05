@@ -95,7 +95,7 @@ def launch_setup(context, *args, **kwargs):
             "gripper": "robotiq_2f_85",
             "vision": "true",
             "launch_rviz": launch_kortex_rviz,
-            "robot_controller": robot_controller
+            "robot_controller": robot_controller,
         }.items(),
     )
 
@@ -173,9 +173,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    rviz_config_file = PathJoinSubstitution(
-        [pkg_gen3py, "rviz", rviz_config_file_name]
-    )
+    rviz_config_file = PathJoinSubstitution([pkg_gen3py, "rviz", rviz_config_file_name])
 
     rviz_node = Node(
         package="rviz2",
@@ -197,7 +195,7 @@ def launch_setup(context, *args, **kwargs):
         robot_info_publisher,
         body_pose_publisher,
         jacobian_publisher,
-        rviz_node
+        rviz_node,
         # rosbridge_node,
     ]
 
@@ -268,7 +266,9 @@ def generate_launch_description():
         DeclareLaunchArgument("launch_kortex_rviz", default_value="false", description="Launch Kortex RViz?")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("rviz_config_file", default_value="view_robot_camera.rviz", description="Name of RViz file in gen3_py/rviz/")
+        DeclareLaunchArgument(
+            "rviz_config_file", default_value="view_robot_camera.rviz", description="Name of RViz file in gen3_py/rviz/"
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
