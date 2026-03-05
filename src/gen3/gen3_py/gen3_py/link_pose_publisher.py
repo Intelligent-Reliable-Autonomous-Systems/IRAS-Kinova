@@ -8,7 +8,7 @@ Written by Will Solow, 2026. IRAS Lab.
 
 import rclpy
 import tf2_ros
-from gen3_cpp.msg import BodyPose
+from gen3_cpp.msg import BodyInfo
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
 from urdf_parser_py.urdf import URDF
@@ -20,9 +20,9 @@ class LinkPosePublisher(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        self.pub = self.create_publisher(BodyPose, "/robot_body_pose_w", 10)
+        self.pub = self.create_publisher(BodyInfo, "/robot_body_pose_w", 10)
 
-        self.timer = self.create_timer(0.05, self.timer_callback)
+        self.timer = self.create_timer(0.02, self.timer_callback)
 
         self.declare_parameter("robot_description", "")
         urdf_xml = self.get_parameter("robot_description").get_parameter_value().string_value
@@ -34,7 +34,7 @@ class LinkPosePublisher(Node):
         Relative to the world frame.
 
         """
-        pose_msg = BodyPose()
+        pose_msg = BodyInfo()
         all_pose_w = []
         i = 0
         # Compute for the body_pose_w
@@ -63,8 +63,8 @@ class LinkPosePublisher(Node):
             root_pose_w = [pos.x, pos.y, pos.z, quat.x, quat.y, quat.z, quat.w]
 
             pose_msg.num_links = i
-            pose_msg.root_pose_w = root_pose_w
-            pose_msg.body_pose_w = all_pose_w
+            pose_msg.root_w = root_pose_w
+            pose_msg.body_w = all_pose_w
 
             self.pub.publish(pose_msg)
         else:

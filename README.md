@@ -84,6 +84,13 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
     ]
     }" -1
     ```
+
+    ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
+    joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
+    points: [
+        { positions: [0, 0.0, 0, 0.0, 0, .0, 0], time_from_start: { sec: 5 } },
+    ]
+    }" -1
     
 
 3. Try resetting the robot

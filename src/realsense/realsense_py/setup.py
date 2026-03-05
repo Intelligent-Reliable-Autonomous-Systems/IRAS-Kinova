@@ -13,6 +13,7 @@ setup(
             "share/" + package_name + "/launch",
             [
                 "launch/test.py",
+                "launch/static_table_depth.py",
             ],
         ),
         ("share/" + package_name + "/config", ["config/camera_info.yaml"]),
@@ -25,6 +26,8 @@ setup(
     license="Apache-2.0",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": [],
+        "console_scripts": [
+            "latest_rgbd_service = iras_realsense.latest_rgbd_service:main",
+        ],
     },
 )
