@@ -23,8 +23,11 @@ class EEPositionPublisher(Node):
 
         self.timer = self.create_timer(0.05, self.timer_callback)
 
-        self.base_frame = "base_link"
-        self.ee_frame = "end_effector_link"
+        self.declare_parameter("base_frame", "base_link")
+        self.declare_parameter("ee_frame", "end_effector_link")
+
+        self.base_frame = self.get_parameter("base_frame").get_parameter_value().string_value
+        self.ee_frame = self.get_parameter("ee_frame").get_parameter_value().string_value
         self.ready = False
 
     def timer_callback(self):

@@ -26,11 +26,24 @@ class RobotInfoPublisher(Node):
             "default_joint_pos",
             [0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0],
         )
+        self.declare_parameter(
+            "joint_names",
+            [
+                "joint_1",
+                "joint_2",
+                "joint_3",
+                "joint_4",
+                "joint_5",
+                "joint_6",
+                "joint_7",
+            ],
+        )
 
         urdf_xml = self.get_parameter("robot_description").get_parameter_value().string_value
         self.default_joint_pos = self.get_parameter("default_joint_pos").get_parameter_value().double_array_value
         self.traj_duration_sec = self.get_parameter("traj_duration_sec").value
         self.traj_duration_nsec = self.get_parameter("traj_duration_nsec").value
+        self.joint_names = self.get_parameter("joint_names").value
 
         self.robot = URDF.from_xml_string(urdf_xml)
 
@@ -74,15 +87,7 @@ class RobotInfoPublisher(Node):
     def publish_initial_joint_state(self):
         msg = JointTrajectory()
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.joint_names = [
-            "joint_1",
-            "joint_2",
-            "joint_3",
-            "joint_4",
-            "joint_5",
-            "joint_6",
-            "joint_7",
-        ]
+        msg.joint_names = self.joint_names
 
         point = JointTrajectoryPoint()
         point.positions = self.default_joint_pos

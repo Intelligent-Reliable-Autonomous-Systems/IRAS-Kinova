@@ -63,7 +63,14 @@ class JacobianPublisher(Node):
         for link in self.robot.links:
             if link.name == "world":
                 continue
-            if "robotiq_85_left" in link.name or "robotiq_85_right" in link.name:
+            # Exclude all non-articulated links from the chain
+            # TODO if we ever want to know where finger links are, we will need to modify this
+            if (
+                "robotiq_85_left" in link.name
+                or "robotiq_85_right" in link.name
+                or "right_finger" in link.name
+                or "left_finger" in link.name
+            ):
                 continue
 
             jac, mass, vel, gravity = self.jacobian_mass_vel(
@@ -161,11 +168,8 @@ class JacobianPublisher(Node):
 
         link_frame = PyKDL.Frame()
         gravity = PyKDL.Vector(0, 0, -9.81)
-
         joints_kdl = self.joints_to_kdl(chain, positions=positions)
         joints_vel_kdl = self.joints_to_kdl(chain, positions=velocities)
-        if joints_kdl is None:
-            return np.full(shape=(6, self.num_joints), fill_value=np.nan)
 
         fk_solver.JntToCart(joints_kdl, link_frame)  # solve forward kinematics
         jac_solver.JntToJac(joints_kdl, jacobian)  # solve jacobian
@@ -184,6 +188,7 @@ class JacobianPublisher(Node):
         # Compute the mass matrix
         mass = PyKDL.JntSpaceInertiaMatrix(chain.getNrOfJoints())
         dyn_solver.JntToMass(joints_kdl, mass)
+
         return (
             self.kdl_to_np(jacobian),
             self.kdl_to_np_mass(mass),
@@ -230,8 +235,8 @@ class JacobianPublisher(Node):
         kdl_array = PyKDL.JntArray(chain.getNrOfJoints())
         for i in range(chain.getNrOfJoints()):
             joint_name = chain.getSegment(i).getJoint().getName()
-            if joint_name not in positions.keys():  # TODO: more robustly handle non-articulated joints in chain
-                return None
+            if joint_name not in positions.keys():
+                continue  # Handle unarticulated joints
             kdl_array[i] = positions[joint_name]
         return kdl_array
 

@@ -28,9 +28,8 @@ from moveit_configs_utils import MoveItConfigsBuilder
 
 def launch_setup(context, *args, **kwargs):
     # Packages to load
-    pkg_kortex_vision = get_package_share_directory("kinova_vision")
     pkg_realsense = get_package_share_directory("iras_realsense")
-    pkg_gen3py = get_package_share_directory("gen3_py")
+    pkg_gen3litepy = get_package_share_directory("gen3lite_py")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
@@ -52,7 +51,7 @@ def launch_setup(context, *args, **kwargs):
     robot_controllers = PathJoinSubstitution(
         [
             FindPackageShare("kortex_description"),
-            "arms/gen3/7dof/config",
+            "arms/gen3_lite/config",
             "ros2_controllers.yaml",
         ]
     )
@@ -66,13 +65,11 @@ def launch_setup(context, *args, **kwargs):
             "robot_ip:=",
             robot_ip,
             " ",
-            "name:=gen3",
+            "name:=gen3_lite",
             " ",
-            "arm:=gen3",
+            "arm:=gen3_lite",
             " ",
-            "dof:=7",
-            " ",
-            "vision:=true",
+            "dof:=6",
             " ",
             "prefix:=''",
             " ",
@@ -81,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
             "simulation_controllers:=",
             robot_controllers,
             " ",
-            "gripper:=robotiq_2f_85",
+            "gripper:=gen3_lite_2f",
             " ",
         ]
     )
@@ -89,23 +86,15 @@ def launch_setup(context, *args, **kwargs):
 
     # Kinova Arm Launch Description
     kinova_arm_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_gen3py, "launch", "kortex_gen3.launch.py"])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_gen3litepy, "launch", "kortex_gen3_lite.launch.py"])),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
-            "gripper": "robotiq_2f_85",
+            "gripper": "gen3_lite_2f",
             "vision": "true",
             "launch_rviz": launch_kortex_rviz,
             "robot_controller": robot_controller,
         }.items(),
-    )
-
-    kinova_vision_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_kortex_vision, "launch", "kinova_vision.launch.py"])),
-        launch_arguments={
-            "device": robot_ip,
-        }.items(),
-        condition=IfCondition(LaunchConfiguration("vision")),
     )
 
     table_camera_launch = IncludeLaunchDescription(
@@ -134,6 +123,7 @@ def launch_setup(context, *args, **kwargs):
             }
         ],
     )
+
     robot_info_publisher = Node(
         package="gen3_py",
         executable="robot_info",
@@ -142,6 +132,14 @@ def launch_setup(context, *args, **kwargs):
                 "robot_description": robot_description_content,
                 "default_joint_pos": default_joint_pos,
                 "traj_duration_sec": 0 if use_fake_hardware else 8,
+                "joint_names": [
+                    "joint_1",
+                    "joint_2",
+                    "joint_3",
+                    "joint_4",
+                    "joint_5",
+                    "joint_6",
+                ],
             }
         ],
     )
@@ -151,14 +149,14 @@ def launch_setup(context, *args, **kwargs):
     jacobian_publisher = Node(package="gen3_py", executable="jacobian_pub", parameters=[robot_description])
 
     moveit_config = (
-        MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
+        MoveItConfigsBuilder("gen3lite", package_name="kinova_gen3_lite_moveit_config")
         .robot_description(
             mappings={
                 "use_fake_hardware": use_fake_hardware,
                 "robot_ip": robot_ip,
-                "gripper": "robotiq_2f_85",
-                "gripper_joint_name": "robotiq_85_left_knuckle_joint",
-                "dof": "7",
+                "gripper": "gen3_lite_2f",
+                "gripper_joint_name": "right_finger_bottom_joint",
+                "dof": "6",
                 "gripper_max_velocity": "100",
                 "gripper_max_force": "100",
                 "use_internal_bus_gripper_comm": "true",
@@ -179,7 +177,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    rviz_config_file = PathJoinSubstitution([pkg_gen3py, "rviz", rviz_config_file_name])
+    rviz_config_file = PathJoinSubstitution([pkg_gen3litepy, "rviz", rviz_config_file_name])
 
     rviz_node = Node(
         package="rviz2",
@@ -194,7 +192,6 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
-        kinova_vision_launch,
         table_camera_launch,
         move_group_node,
         ee_publisher,
@@ -223,23 +220,15 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_ip",
-            default_value="192.168.18.10",
+            default_value="192.168.1.10",
             description="ip of robot",
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            "vision",
-            default_value="false",
-            description="If to load vision topics",
-        )
-    )
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
             "default_joint_pos",
-            default_value="[0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0]",
+            default_value="[0.12, -0.18, 2.16, -1.57, -0.6, -1.34]",
             description="Default joint positions of the robot",
         )
     )
@@ -273,7 +262,7 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rviz_config_file", default_value="view_robot_camera.rviz", description="Name of RViz file in gen3_py/rviz/"
+            "rviz_config_file", default_value="view_robot.rviz", description="Name of RViz file in pkg_gen3litepy/rviz/"
         )
     )
 
