@@ -49,7 +49,8 @@ def launch_setup(context, *args, **kwargs):
     gripper_max_force = LaunchConfiguration("gripper_max_force")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
-    robot_traj_controller = LaunchConfiguration("robot_controller")
+    robot_controller = LaunchConfiguration("robot_controller")
+    robot_traj_controller = LaunchConfiguration("robot_traj_controller")
     robot_pos_controller = LaunchConfiguration("robot_pos_controller")
     robot_hand_controller = LaunchConfiguration("robot_hand_controller")
     fault_controller = LaunchConfiguration("fault_controller")
@@ -167,12 +168,27 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="spawner",
         arguments=[robot_traj_controller, "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" == "', robot_traj_controller, '"'])),
     )
 
+    robot_traj_controller_spawner_inactive = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[robot_traj_controller, "--inactive", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" != "', robot_traj_controller, '"'])),
+    )
     robot_pos_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
+        arguments=[robot_pos_controller, "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" == "', robot_pos_controller, '"'])),
+    )
+
+    robot_pos_controller_spawner_inactive = Node(
+        package="controller_manager",
+        executable="spawner",
         arguments=[robot_pos_controller, "--inactive", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" != "', robot_pos_controller, '"'])),
     )
 
     robot_hand_controller_spawner = Node(
@@ -196,7 +212,9 @@ def launch_setup(context, *args, **kwargs):
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         robot_traj_controller_spawner,
+        robot_traj_controller_spawner_inactive,
         robot_pos_controller_spawner,
+        robot_pos_controller_spawner_inactive,
         fault_controller_spawner,
     ]
     start_robot_hand_controller = gripper.perform(context) != ""
@@ -317,9 +335,16 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "robot_traj_controller",
+            default_value="joint_trajectory_controller",
+            description="Robot joint controller to start.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "robot_pos_controller",
             default_value="twist_controller",
-            description="Robot controller to start.",
+            description="Robot twist controller to start.",
         )
     )
     declared_arguments.append(
