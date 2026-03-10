@@ -1,26 +1,18 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>iras_realsense</name>
+  <name>iras_viz</name>
   <version>0.0.0</version>
-  <description>An external realsense RGB-D camera for detecting objects in a manipulation workspace</description>
+  <description>Visualization tools for the IRAS project</description>
   <maintainer email="jewettje@oregonstate.edu">jjewett</maintainer>
   <license>Apache-2.0</license>
 
   <depend>rclpy</depend>
+  <depend>visualization_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>iras_realsense_msgs</depend>
-  <depend>tf2_ros</depend>
-  <depend>realsense2_camera</depend>
-  <exec_depend>apriltag_ros</exec_depend>
-  <!-- <depend>usb_cam</depend>
-  <depend>image_transport</depend>
-  <depend>camera_info_manager</depend>
-  <depend>image_pipeline</depend>
-  <depend>camera_calibration</depend>
-  <depend>cv_bridge</depend> -->
-  <build_depend>python3-opencv</build_depend>
-  <exec_depend>python3-opencv</exec_depend>
+  <depend>builtin_interfaces</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
