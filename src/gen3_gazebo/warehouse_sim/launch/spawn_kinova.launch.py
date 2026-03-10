@@ -256,7 +256,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_file",
-            default_value="kinova.urdf.xacro",
+            default_value="gen3.xacro",
             description="URDF/XACRO description file with the robot.",
         )
     )

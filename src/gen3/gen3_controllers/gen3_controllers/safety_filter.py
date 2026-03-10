@@ -43,13 +43,9 @@ class SafetyFilter(Node):
 
         self.get_logger().info(f"SafetyFilter: {self.in_topic} -> {self.out_topic}")
 
-        self.joint_limits = self.read_joint_limits(
-            "./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf"
-        )
-
+        self.joint_limits = self.read_joint_limits("./src/third_party/ros2_kortex/ros2_kortex/kortex_description/robots/gen3_2f85.urdf")
         #add parameter callback
         self.add_on_set_parameters_callback(self.on_param_change)
-
         self.get_logger().info(f"{self.joint_limits}")
 
     def on_param_change(self, parameters):

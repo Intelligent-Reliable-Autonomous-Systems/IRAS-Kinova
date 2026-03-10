@@ -9,6 +9,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
+        ("share/" + package_name + "/config", ["config/pick_and_place_params.yaml"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -27,6 +28,7 @@ setup(
             "gen3_reach_isaac = gen3_controllers.isaac.gen3_reach_isaac:main",
             "gen3_reach_nogripper = gen3_controllers.no_gripper.gen3_reach_nogripper:main",
             "safety_filter = gen3_controllers.safety_filter:main",
+            'pick_and_place = gen3_controllers.pick_and_place:main',
         ],
     },
 )

@@ -1,0 +1,8 @@
+Params skill
+---
+sensor_msgs/JointState joint_state
+float32 gripper_position
+bool gripper
+bool arm
+bool success
+string message

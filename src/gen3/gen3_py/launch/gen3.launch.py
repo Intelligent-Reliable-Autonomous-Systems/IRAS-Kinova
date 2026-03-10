@@ -164,6 +164,21 @@ def launch_setup(context, *args, **kwargs):
         .to_moveit_configs()
     )
 
+    pick_and_place_node = Node(
+        package="gen3_controllers",
+        executable="pick_and_place",
+        name="pick_and_place",
+        output="screen",
+        parameters=[
+            moveit_config.to_dict(),
+            PathJoinSubstitution([
+                FindPackageShare("gen3_controllers"),
+                "config", "pick_and_place_params.yaml"
+            ]),
+        ],
+    )
+
+
     move_group_node = Node(
         package="moveit_ros_move_group",
         executable="move_group",
@@ -196,6 +211,7 @@ def launch_setup(context, *args, **kwargs):
         body_pose_publisher,
         jacobian_publisher,
         rviz_node,
+        pick_and_place_node,
         # rosbridge_node,
     ]
 
