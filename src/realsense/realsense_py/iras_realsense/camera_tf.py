@@ -72,7 +72,7 @@ class CameraPoseInKinova(Node):
                 self.get_logger().warn(
                     f"Could not look up {self.camera_frame} -> {self.tag_frame}: {e}"
                 )
-                # self.warned_about_missing_transform = True
+                self.warned_about_missing_transform = True
             return
 
         # Invert it to get tag -> camera
@@ -95,6 +95,12 @@ class CameraPoseInKinova(Node):
                 timeout=Duration(seconds=0.1)
             )
         except Exception as e:
+            if not self.warned_about_missing_transform:
+                self.get_logger().warn(
+                    f"Could not look up static kinova/base_link -> tag0_anchor: {e}"
+                )
+                self.warned_about_missing_transform = True
+            return
             self.get_logger().warn(
                 f"Could not look up static kinova/base_link -> tag0_anchor: {e}"
             )
@@ -129,9 +135,9 @@ class CameraPoseInKinova(Node):
         dyn_tf.transform.rotation.z = quat[3]
 
         self.dyn_broadcaster.sendTransform(dyn_tf)
-        self.get_logger().info(
-            f"Published {self.kinova_base_link_frame} -> {self.camera_frame}: t=[{trans[0]:.3f}, {trans[1]:.3f}, {trans[2]:.3f}]"
-        )
+        # self.get_logger().info(
+        #     f"Published {self.kinova_base_link_frame} -> {self.camera_frame}: t=[{trans[0]:.3f}, {trans[1]:.3f}, {trans[2]:.3f}]"
+        # )
 
 
 def main(args=None):

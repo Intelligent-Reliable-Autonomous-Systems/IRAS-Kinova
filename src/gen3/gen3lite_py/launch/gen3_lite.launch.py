@@ -98,19 +98,16 @@ def launch_setup(context, *args, **kwargs):
     )
 
     table_camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "static_table_depth.py"])),
-        launch_arguments={
-            "world_frame": table_camera_world_frame,
-            "camera_frame": table_camera_frame,
-            "camera_x": table_camera_x,
-            "camera_y": table_camera_y,
-            "camera_z": table_camera_z,
-            "camera_qx": table_camera_qx,
-            "camera_qy": table_camera_qy,
-            "camera_qz": table_camera_qz,
-            "camera_qw": table_camera_qw,
-        }.items(),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "rgbd_april.py"])),
         condition=IfCondition(use_table_camera),
+    )
+
+    table_scene_node = Node(
+        package='iras_viz',
+        executable='table_scene',
+        name='table_scene_visualizer',
+        output='screen',
+        # condition=IfCondition(rviz2),
     )
 
     ee_publisher = Node(
@@ -193,6 +190,7 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_launch = [
         kinova_arm_launch,
         table_camera_launch,
+        table_scene_node,
         move_group_node,
         ee_publisher,
         robot_info_publisher,
