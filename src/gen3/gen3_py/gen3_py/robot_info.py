@@ -71,7 +71,7 @@ class RobotInfoPublisher(Node):
         links = []
         msg_pub = RobotInfo()
         for joint in self.robot.joints:
-            if joint.joint_type == 'fixed':
+            if joint.joint_type == "fixed":
                 continue
             if joint.limit:
                 joints.append(joint.name)

@@ -6,6 +6,7 @@ Main launch file for Kinova Gen3 Arm with Robotiq 2F 85 gripper
 Written by Will Solow, 2025. IRAS Lab.
 """
 
+from pathlib import Path
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
@@ -13,7 +14,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
 )
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
@@ -45,22 +46,27 @@ def launch_setup(context, *args, **kwargs):
     table_camera_qy = LaunchConfiguration("table_camera_qy")
     table_camera_qz = LaunchConfiguration("table_camera_qz")
     table_camera_qw = LaunchConfiguration("table_camera_qw")
-    launch_kortex_rviz = LaunchConfiguration("launch_kortex_rviz")
+    launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file_name = LaunchConfiguration("rviz_config_file")
     robot_controller = LaunchConfiguration("robot_controller")
+
     robot_controllers = PathJoinSubstitution(
         [
-            FindPackageShare("kortex_description"),
-            "arms/gen3_lite/config",
+            FindPackageShare("gen3lite_py"),
+            "config",
             "ros2_controllers.yaml",
         ]
     )
+
+    moveit_controllers = Path(get_package_share_directory("gen3lite_py")) / "config" / "moveit_controllers.yaml"
+
+    robot_path = Path(get_package_share_directory("gen3lite_py")) / "robot" / "gen3_lite_gen3_lite_2f.xacro"
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]),
+            PathJoinSubstitution([FindPackageShare("gen3lite_py"), "robot", "kinova.urdf.xacro"]),
             " ",
             "robot_ip:=",
             robot_ip,
@@ -90,9 +96,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
             "robot_ip": robot_ip,
-            "gripper": "gen3_lite_2f",
             "vision": "true",
-            "launch_rviz": launch_kortex_rviz,
             "robot_controller": robot_controller,
         }.items(),
     )
@@ -151,6 +155,7 @@ def launch_setup(context, *args, **kwargs):
     moveit_config = (
         MoveItConfigsBuilder("gen3lite", package_name="kinova_gen3_lite_moveit_config")
         .robot_description(
+            file_path=robot_path,
             mappings={
                 "use_fake_hardware": use_fake_hardware,
                 "robot_ip": robot_ip,
@@ -160,9 +165,9 @@ def launch_setup(context, *args, **kwargs):
                 "gripper_max_velocity": "100",
                 "gripper_max_force": "100",
                 "use_internal_bus_gripper_comm": "true",
-            }
+            },
         )
-        .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .trajectory_execution(file_path=moveit_controllers)
         .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
@@ -181,14 +186,12 @@ def launch_setup(context, *args, **kwargs):
 
     rviz_node = Node(
         package="rviz2",
-        condition=UnlessCondition(launch_kortex_rviz),
+        condition=IfCondition(launch_rviz),
         executable="rviz2",
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
     )
-
-    # rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
 
     nodes_to_launch = [
         kinova_arm_launch,
@@ -199,7 +202,6 @@ def launch_setup(context, *args, **kwargs):
         body_pose_publisher,
         jacobian_publisher,
         rviz_node,
-        # rosbridge_node,
     ]
 
     return nodes_to_launch
@@ -258,7 +260,7 @@ def generate_launch_description():
     declared_arguments.append(DeclareLaunchArgument("table_camera_qz", default_value="0.0"))
     declared_arguments.append(DeclareLaunchArgument("table_camera_qw", default_value="1.0"))
     declared_arguments.append(
-        DeclareLaunchArgument("launch_kortex_rviz", default_value="false", description="Launch Kortex RViz?")
+        DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch Kortex RViz?")
     )
     declared_arguments.append(
         DeclareLaunchArgument(

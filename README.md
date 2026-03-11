@@ -47,7 +47,7 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
     git clone https://github.com/ros/kdl_parser_py.git src/third_party/kdl_parser_py
     ```
 
-5. Source the ROS2 installation from toryhe home direct
+5. Source the ROS2 installation from the home directory
 
     ```
     source opt/ros/jazzy/setup.bash

@@ -116,8 +116,6 @@ def generate_launch_description():
         )
     )
 
-    declared_arguments.append(DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?"))
-
     # Initialize Arguments
     robot_type = LaunchConfiguration("robot_type")
     robot_ip = LaunchConfiguration("robot_ip")
@@ -130,7 +128,6 @@ def generate_launch_description():
     gripper_max_velocity = LaunchConfiguration("gripper_max_velocity")
     gripper_max_force = LaunchConfiguration("gripper_max_force")
     gripper_joint_name = LaunchConfiguration("gripper_joint_name")
-    launch_rviz = LaunchConfiguration("launch_rviz")
     controllers_file = LaunchConfiguration("controllers_file")
     description_file = LaunchConfiguration("description_file")
 
@@ -149,7 +146,6 @@ def generate_launch_description():
             "gripper_max_velocity": gripper_max_velocity,
             "gripper_max_force": gripper_max_force,
             "gripper_joint_name": gripper_joint_name,
-            "launch_rviz": launch_rviz,
             "controllers_file": controllers_file,
             "description_file": description_file,
         }.items(),
