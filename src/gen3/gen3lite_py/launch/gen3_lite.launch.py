@@ -37,15 +37,6 @@ def launch_setup(context, *args, **kwargs):
     robot_ip = LaunchConfiguration("robot_ip")
     default_joint_pos = LaunchConfiguration("default_joint_pos")
     use_table_camera = LaunchConfiguration("use_table_camera")
-    table_camera_world_frame = LaunchConfiguration("table_camera_world_frame")
-    table_camera_frame = LaunchConfiguration("table_camera_frame")
-    table_camera_x = LaunchConfiguration("table_camera_x")
-    table_camera_y = LaunchConfiguration("table_camera_y")
-    table_camera_z = LaunchConfiguration("table_camera_z")
-    table_camera_qx = LaunchConfiguration("table_camera_qx")
-    table_camera_qy = LaunchConfiguration("table_camera_qy")
-    table_camera_qz = LaunchConfiguration("table_camera_qz")
-    table_camera_qw = LaunchConfiguration("table_camera_qw")
     launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file_name = LaunchConfiguration("rviz_config_file")
     robot_controller = LaunchConfiguration("robot_controller")
@@ -107,10 +98,10 @@ def launch_setup(context, *args, **kwargs):
     )
 
     table_scene_node = Node(
-        package='iras_viz',
-        executable='table_scene',
-        name='table_scene_visualizer',
-        output='screen',
+        package="iras_viz",
+        executable="table_scene",
+        name="table_scene_visualizer",
+        output="screen",
         # condition=IfCondition(rviz2),
     )
 
@@ -248,15 +239,6 @@ def generate_launch_description():
             description="If to launch table camera and RGB-D snapshot service",
         )
     )
-    declared_arguments.append(DeclareLaunchArgument("table_camera_world_frame", default_value="world"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_frame", default_value="table_camera_link"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_x", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_y", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_z", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qx", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qy", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qz", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qw", default_value="1.0"))
     declared_arguments.append(
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch Kortex RViz?")
     )

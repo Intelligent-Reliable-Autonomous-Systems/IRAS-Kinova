@@ -38,6 +38,9 @@ def launch_setup(context, *args, **kwargs):
     default_joint_pos = LaunchConfiguration("default_joint_pos")
     use_table_camera = LaunchConfiguration("use_table_camera")
     rviz2 = LaunchConfiguration("rviz2", default="true")
+    robot_controller = LaunchConfiguration("robot_controller")
+    rviz_config_file_name = LaunchConfiguration("rviz_config_file")
+    launch_rviz = LaunchConfiguration("launch_rviz")
 
     robot_controllers = PathJoinSubstitution(
         [
@@ -85,7 +88,6 @@ def launch_setup(context, *args, **kwargs):
             "robot_ip": robot_ip,
             "gripper": "robotiq_2f_85",
             "vision": "true",
-            "launch_rviz": launch_kortex_rviz,
             "robot_controller": robot_controller,
         }.items(),
     )
@@ -98,25 +100,8 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration("vision")),
     )
 
-    # table_camera_launch = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "static_table_depth.py"])),
-    #     launch_arguments={
-    #         "world_frame": table_camera_world_frame,
-    #         "camera_frame": table_camera_frame,
-    #         "camera_x": table_camera_x,
-    #         "camera_y": table_camera_y,
-    #         "camera_z": table_camera_z,
-    #         "camera_qx": table_camera_qx,
-    #         "camera_qy": table_camera_qy,
-    #         "camera_qz": table_camera_qz,
-    #         "camera_qw": table_camera_qw,
-    #     }.items(),
-    #     condition=IfCondition(use_table_camera),
-    # )
-
     table_camera_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution(
-            [pkg_realsense, "launch", "rgbd_april.py"])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([pkg_realsense, "launch", "rgbd_april.py"])),
         condition=IfCondition(use_table_camera),
     )
 
@@ -176,10 +161,10 @@ def launch_setup(context, *args, **kwargs):
     )
 
     table_scene_node = Node(
-        package='iras_viz',
-        executable='table_scene',
-        name='table_scene_visualizer',
-        output='screen',
+        package="iras_viz",
+        executable="table_scene",
+        name="table_scene_visualizer",
+        output="screen",
         condition=IfCondition(rviz2),
     )
 
@@ -187,7 +172,7 @@ def launch_setup(context, *args, **kwargs):
 
     rviz_node = Node(
         package="rviz2",
-        condition=UnlessCondition(launch_kortex_rviz),
+        condition=IfCondition(launch_rviz),
         executable="rviz2",
         name="rviz2",
         output="log",
@@ -264,17 +249,8 @@ def generate_launch_description():
             description="If to launch table camera and RGB-D snapshot service",
         )
     )
-    declared_arguments.append(DeclareLaunchArgument("table_camera_world_frame", default_value="world"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_frame", default_value="table_camera_link"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_x", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_y", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_z", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qx", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qy", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qz", default_value="0.0"))
-    declared_arguments.append(DeclareLaunchArgument("table_camera_qw", default_value="1.0"))
     declared_arguments.append(
-        DeclareLaunchArgument("launch_kortex_rviz", default_value="false", description="Launch Kortex RViz?")
+        DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch Kortex RViz?")
     )
     declared_arguments.append(
         DeclareLaunchArgument(

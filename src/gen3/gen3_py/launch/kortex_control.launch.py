@@ -54,7 +54,6 @@ def launch_setup(context, *args, **kwargs):
     robot_pos_controller = LaunchConfiguration("robot_pos_controller")
     robot_hand_controller = LaunchConfiguration("robot_hand_controller")
     fault_controller = LaunchConfiguration("fault_controller")
-    launch_rviz = LaunchConfiguration("launch_rviz")
     use_internal_bus_gripper_comm = LaunchConfiguration("use_internal_bus_gripper_comm")
     gripper_joint_name = LaunchConfiguration("gripper_joint_name")
 
@@ -117,8 +116,6 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
-    rviz_config_file = PathJoinSubstitution([FindPackageShare(description_package), "rviz", "view_robot.rviz"])
-
     control_node = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -136,15 +133,6 @@ def launch_setup(context, *args, **kwargs):
         parameters=[robot_description],
     )
 
-    rviz_node = Node(
-        package="rviz2",
-        condition=IfCondition(launch_rviz),
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-    )
-
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -153,15 +141,6 @@ def launch_setup(context, *args, **kwargs):
             "--controller-manager",
             "/controller_manager",
         ],
-    )
-
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[rviz_node],
-        ),
-        condition=IfCondition(launch_rviz),
     )
 
     robot_traj_controller_spawner = Node(
@@ -210,7 +189,6 @@ def launch_setup(context, *args, **kwargs):
         control_node,
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
-        delay_rviz_after_joint_state_broadcaster_spawner,
         robot_traj_controller_spawner,
         robot_pos_controller_spawner,
         fault_controller_spawner,
@@ -361,7 +339,6 @@ def generate_launch_description():
             description="Name of the 'fault controller.",
         )
     )
-    declared_arguments.append(DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?"))
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_internal_bus_gripper_comm",

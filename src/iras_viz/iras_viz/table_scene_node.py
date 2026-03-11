@@ -25,30 +25,28 @@ class TableSceneVisualizer(Node):
     LEG_RADIUS = 0.025
 
     def __init__(self):
-        super().__init__('table_scene_visualizer')
+        super().__init__("table_scene_visualizer")
 
-        self.marker_pub = self.create_publisher(
-            MarkerArray, 'table_scene_markers', 10
-        )
+        self.marker_pub = self.create_publisher(MarkerArray, "table_scene_markers", 10)
 
-        self.declare_parameter('base_frame', 'base_link')
-        self.declare_parameter('tag0_frame', 'tag0_anchor')
-        self.declare_parameter('camera_frame', 'camera_color_frame')
-        self.declare_parameter('tag_size', 0.1)
-        self.declare_parameter('publish_rate_hz', 2.0)
-        self.declare_parameter('table_leg_height', 0.73)
+        self.declare_parameter("base_frame", "base_link")
+        self.declare_parameter("tag0_frame", "tag0_anchor")
+        self.declare_parameter("camera_frame", "camera_color_frame")
+        self.declare_parameter("tag_size", 0.1)
+        self.declare_parameter("publish_rate_hz", 2.0)
+        self.declare_parameter("table_leg_height", 0.73)
 
-        self.base_frame = self.get_parameter('base_frame').value
-        self.tag0_frame = self.get_parameter('tag0_frame').value
-        self.camera_frame = self.get_parameter('camera_frame').value
-        self.tag_size = self.get_parameter('tag_size').value
-        rate = self.get_parameter('publish_rate_hz').value
-        self.leg_height = self.get_parameter('table_leg_height').value
+        self.base_frame = self.get_parameter("base_frame").value
+        self.tag0_frame = self.get_parameter("tag0_frame").value
+        self.camera_frame = self.get_parameter("camera_frame").value
+        self.tag_size = self.get_parameter("tag_size").value
+        rate = self.get_parameter("publish_rate_hz").value
+        self.leg_height = self.get_parameter("table_leg_height").value
 
         self.tag_texture = self._load_tag_texture()
 
         self.timer = self.create_timer(1.0 / max(rate, 0.1), self._publish)
-        self.get_logger().info('Table scene visualizer started')
+        self.get_logger().info("Table scene visualizer started")
 
     # ------------------------------------------------------------------
     # Image loading
@@ -57,22 +55,18 @@ class TableSceneVisualizer(Node):
     def _load_tag_texture(self):
         """Read the AprilTag PNG into a CompressedImage for embedding."""
         try:
-            pkg_dir = get_package_share_directory('iras_viz')
-            tag_path = os.path.join(
-                pkg_dir, 'data', 'apriltag', 'AprilTag-tag36h11-ID0.png'
-            )
-            with open(tag_path, 'rb') as f:
+            pkg_dir = get_package_share_directory("iras_viz")
+            tag_path = os.path.join(pkg_dir, "data", "apriltag", "AprilTag-tag36h11-ID0.png")
+            with open(tag_path, "rb") as f:
                 png_bytes = f.read()
 
             img = CompressedImage()
-            img.format = 'png'
+            img.format = "png"
             img.data = list(png_bytes)
-            self.get_logger().info(
-                f'Loaded AprilTag texture ({len(png_bytes)} bytes) from {tag_path}'
-            )
+            self.get_logger().info(f"Loaded AprilTag texture ({len(png_bytes)} bytes) from {tag_path}")
             return img
         except Exception as e:
-            self.get_logger().error(f'Failed to load AprilTag texture: {e}')
+            self.get_logger().error(f"Failed to load AprilTag texture: {e}")
             return None
 
     # ------------------------------------------------------------------
@@ -110,7 +104,7 @@ class TableSceneVisualizer(Node):
         top = Marker()
         top.header.frame_id = self.base_frame
         top.header.stamp = stamp
-        top.ns = 'table'
+        top.ns = "table"
         top.id = 0
         top.type = Marker.CUBE
         top.action = Marker.ADD
@@ -135,7 +129,7 @@ class TableSceneVisualizer(Node):
             leg = Marker()
             leg.header.frame_id = self.base_frame
             leg.header.stamp = stamp
-            leg.ns = 'table'
+            leg.ns = "table"
             leg.id = i + 1
             leg.type = Marker.CYLINDER
             leg.action = Marker.ADD
@@ -169,7 +163,7 @@ class TableSceneVisualizer(Node):
         # Lens face -- flat plate perpendicular to +x (forward)
         face = Marker()
         face.header.frame_id = self.camera_frame
-        face.ns = 'camera'
+        face.ns = "camera"
         face.id = 0
         face.type = Marker.CUBE
         face.action = Marker.ADD
@@ -185,7 +179,7 @@ class TableSceneVisualizer(Node):
         # Body -- extends behind the face (-x direction)
         body = Marker()
         body.header.frame_id = self.camera_frame
-        body.ns = 'camera'
+        body.ns = "camera"
         body.id = 1
         body.type = Marker.CUBE
         body.action = Marker.ADD
@@ -201,7 +195,7 @@ class TableSceneVisualizer(Node):
         # Top indicator -- small red nub on the +z side (physical "up")
         nub = Marker()
         nub.header.frame_id = self.camera_frame
-        nub.ns = 'camera'
+        nub.ns = "camera"
         nub.id = 2
         nub.type = Marker.CUBE
         nub.action = Marker.ADD
@@ -231,7 +225,7 @@ class TableSceneVisualizer(Node):
         m = Marker()
         m.header.frame_id = self.tag0_frame
         m.header.stamp = stamp
-        m.ns = 'apriltag0'
+        m.ns = "apriltag0"
         m.id = 0
         m.type = Marker.TRIANGLE_LIST
         m.action = Marker.ADD
@@ -246,15 +240,15 @@ class TableSceneVisualizer(Node):
         m.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
 
         # Two triangles forming a quad in the XY plane
-        v0 = Point(x=half, y=-half, z=0.0)   # bottom-right
-        v1 = Point(x=half, y=half, z=0.0)    # top-right
-        v2 = Point(x=-half, y=half, z=0.0)   # top-left
+        v0 = Point(x=half, y=-half, z=0.0)  # bottom-right
+        v1 = Point(x=half, y=half, z=0.0)  # top-right
+        v2 = Point(x=-half, y=half, z=0.0)  # top-left
         v3 = Point(x=-half, y=-half, z=0.0)  # bottom-left
 
         m.points = [v0, v1, v2, v0, v2, v3]
 
         # Embed the PNG data directly in the message
-        m.texture_resource = 'embedded://apriltag0'
+        m.texture_resource = "embedded://apriltag0"
         m.texture = self.tag_texture
 
         m.uv_coordinates = [
@@ -282,5 +276,5 @@ def main(args=None):
         rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
