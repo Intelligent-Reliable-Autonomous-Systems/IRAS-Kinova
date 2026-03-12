@@ -108,14 +108,6 @@ def generate_launch_description():
         )
     )
 
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "description_file",
-            default_value="gen3_lite_gen3_lite_2f.xacro",
-            description="URDF file to use",
-        )
-    )
-
     # Initialize Arguments
     robot_type = LaunchConfiguration("robot_type")
     robot_ip = LaunchConfiguration("robot_ip")
@@ -129,7 +121,6 @@ def generate_launch_description():
     gripper_max_force = LaunchConfiguration("gripper_max_force")
     gripper_joint_name = LaunchConfiguration("gripper_joint_name")
     controllers_file = LaunchConfiguration("controllers_file")
-    description_file = LaunchConfiguration("description_file")
 
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([ThisLaunchFileDir(), "/kortex_control.launch.py"]),
@@ -147,7 +138,7 @@ def generate_launch_description():
             "gripper_max_force": gripper_max_force,
             "gripper_joint_name": gripper_joint_name,
             "controllers_file": controllers_file,
-            "description_file": description_file,
+            "description_file": "gen3_lite_gen3_lite_2f.xacro",
         }.items(),
     )
 

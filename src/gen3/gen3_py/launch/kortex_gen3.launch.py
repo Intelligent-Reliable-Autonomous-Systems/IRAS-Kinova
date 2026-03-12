@@ -69,7 +69,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "gripper",
-            default_value="",
+            default_value="robotiq_2f_85",
             description="Name of the gripper attached to the arm",
             choices=["", "robotiq_2f_85", "robotiq_2f_140"],
         )

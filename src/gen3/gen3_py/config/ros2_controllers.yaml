@@ -11,11 +11,11 @@ controller_manager:
     twist_controller:
       type: picknik_twist_controller/PicknikTwistController
 
+    robotiq_gripper_controller:
+      type: parallel_gripper_controllers/GripperActionController
+
     fault_controller:
       type: picknik_reset_fault_controller/PicknikResetFaultController
-
-    gen3_lite_2f_gripper_controller:
-      type: parallel_gripper_action_controller/GripperActionController
 
     forward_velocity_controller:
       type: forward_command_controller/ForwardCommandController
@@ -32,6 +32,7 @@ joint_trajectory_controller:
       - joint_4
       - joint_5
       - joint_6
+      - joint_7
     command_interfaces:
       - position
     state_interfaces:
@@ -55,10 +56,10 @@ twist_controller:
       - twist.angular.y
       - twist.angular.z
 
-gen3_lite_2f_gripper_controller:
+robotiq_gripper_controller:
   ros__parameters:
     default: true
-    joint: right_finger_bottom_joint
+    joint: robotiq_85_left_knuckle_joint
     allow_stalling: true
 
 
@@ -71,6 +72,7 @@ forward_velocity_controller:
       - joint_4
       - joint_5
       - joint_6
+      - joint_7
 
     interface_name: velocity
 
@@ -83,4 +85,7 @@ forward_position_controller:
       - joint_4
       - joint_5
       - joint_6
+      - joint_7
+
     interface_name: position
+

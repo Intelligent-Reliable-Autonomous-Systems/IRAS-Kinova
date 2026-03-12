@@ -6,13 +6,11 @@ Main launch file for Kinova Gen3 Arm with Robotiq 2F 85 gripper
 Written by Will Solow, 2025. IRAS Lab.
 """
 
-import os
 from pathlib import Path
-from launch.event_handlers import OnProcessExit
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -21,10 +19,10 @@ from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
 )
+from launch_param_builder import ParameterBuilder
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from moveit_configs_utils import MoveItConfigsBuilder
-from launch_param_builder import ParameterBuilder
 
 
 def launch_setup(context, *args, **kwargs):
@@ -207,23 +205,31 @@ def launch_setup(context, *args, **kwargs):
         arguments=["-d", rviz_config_file],
     )
 
-    delay_rviz_after_servo = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=servo_node,
-            on_exit=[rviz_node],
-        ),
-        condition=IfCondition(launch_rviz),
+    vel_integrator = Node(
+        package="gen3_py",
+        executable="vel_integrator",
+        parameters=[
+            {
+                "joint_names": ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"],
+                "initial_positions": [0.2, -0.18, 2.16, -1.57, -0.6, -1.34],
+                "command_topic": "/fake_joint_commands",
+                "state_topic": "/fake_joint_states",
+                "publish_rate": 100.0,
+            }
+        ],
+        condition=IfCondition(use_fake_hardware),
     )
 
     nodes_to_launch = [
         kinova_arm_launch,
-        table_camera_launch,
-        table_scene_node,
-        move_group_node,
-        ee_publisher,
-        robot_info_publisher,
-        body_pose_publisher,
-        jacobian_publisher,
+        # table_camera_launch,
+        # table_scene_node,
+        # move_group_node,
+        # ee_publisher,
+        # robot_info_publisher,
+        # body_pose_publisher,
+        # jacobian_publisher,
+        vel_integrator,
         rviz_node,
         # servo_node
     ]

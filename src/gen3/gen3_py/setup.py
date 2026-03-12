@@ -14,7 +14,8 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name, "launch"), glob("launch/*.py")),
         (os.path.join("share", package_name, "rviz"), glob("rviz/*.rviz")),
-        (os.path.join("share", package_name, "config"), glob("config/.*")),
+        (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
+        (os.path.join("share", package_name, "robot"), glob("robot/*.xacro")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -33,6 +34,7 @@ setup(
             "robot_info=gen3_py.robot_info:main",
             "body_pose=gen3_py.link_pose_publisher:main",
             "jacobian_pub=gen3_py.jacobian_pub:main",
+            "vel_integrator=gen3_py.velocity_integrator:main",
         ],
     },
 )

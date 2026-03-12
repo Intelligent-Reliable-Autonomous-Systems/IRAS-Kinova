@@ -34,7 +34,7 @@
     moveit_active:=false" >
 
     <!-- ros2 control include -->
-    <xacro:include filename="$(find kortex_description)/arms/gen3_lite/${dof}dof/urdf/kortex.ros2_control.xacro" />
+    <xacro:include filename="$(find gen3lite_py)/robot/kortex.ros2_control.xacro" />
     <xacro:if value="${sim_gazebo}">
       <xacro:unless value="${moveit_active}">
         <xacro:property name="ros2_control_name" value="GazeboSimSystem"/>

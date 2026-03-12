@@ -6,6 +6,8 @@ Main launch file for Kinova Gen3 Arm with Robotiq 2F 85 gripper
 Written by Will Solow, 2025. IRAS Lab.
 """
 
+from pathlib import Path
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
@@ -13,7 +15,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
 )
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
     Command,
@@ -44,17 +46,21 @@ def launch_setup(context, *args, **kwargs):
 
     robot_controllers = PathJoinSubstitution(
         [
-            FindPackageShare("kortex_description"),
-            "arms/gen3/7dof/config",
+            FindPackageShare("gen3_py"),
+            "config",
             "ros2_controllers.yaml",
         ]
     )
+
+    moveit_controllers = Path(get_package_share_directory("gen3_py")) / "config" / "moveit_controllers.yaml"
+
+    robot_path = Path(get_package_share_directory("gen3_py")) / "robot" / "gen3_macro.xacro"
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare("kortex_description"), "robots", "kinova.urdf.xacro"]),
+            PathJoinSubstitution([FindPackageShare("gen3_py"), "robot", "kinova.urdf.xacro"]),
             " ",
             "robot_ip:=",
             robot_ip,
@@ -105,6 +111,14 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_table_camera),
     )
 
+    table_scene_node = Node(
+        package="iras_viz",
+        executable="table_scene",
+        name="table_scene_visualizer",
+        output="screen",
+        # condition=IfCondition(rviz2),
+    )
+
     ee_publisher = Node(
         package="gen3_py",
         executable="ee_pub",
@@ -115,6 +129,7 @@ def launch_setup(context, *args, **kwargs):
             }
         ],
     )
+
     robot_info_publisher = Node(
         package="gen3_py",
         executable="robot_info",
@@ -134,6 +149,7 @@ def launch_setup(context, *args, **kwargs):
     moveit_config = (
         MoveItConfigsBuilder("gen3", package_name="kinova_gen3_7dof_robotiq_2f_85_moveit_config")
         .robot_description(
+            file_path=robot_path,
             mappings={
                 "use_fake_hardware": use_fake_hardware,
                 "robot_ip": robot_ip,
@@ -143,9 +159,9 @@ def launch_setup(context, *args, **kwargs):
                 "gripper_max_velocity": "100",
                 "gripper_max_force": "100",
                 "use_internal_bus_gripper_comm": "true",
-            }
+            },
         )
-        .trajectory_execution(file_path="config/moveit_controllers.yaml")
+        .trajectory_execution(file_path=moveit_controllers)
         .planning_scene_monitor(publish_robot_description=True, publish_robot_description_semantic=True)
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
         .to_moveit_configs()
@@ -160,14 +176,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    table_scene_node = Node(
-        package="iras_viz",
-        executable="table_scene",
-        name="table_scene_visualizer",
-        output="screen",
-        condition=IfCondition(rviz2),
-    )
-
     rviz_config_file = PathJoinSubstitution([pkg_gen3py, "rviz", rviz_config_file_name])
 
     rviz_node = Node(
@@ -179,10 +187,24 @@ def launch_setup(context, *args, **kwargs):
         arguments=["-d", rviz_config_file],
     )
 
-    # rosbridge_node = Node(package="rosbridge_server", executable="rosbridge_websocket")
+    vel_integrator = Node(
+        package="gen3_py",
+        executable="vel_integrator",
+        parameters=[
+            {
+                "joint_names": ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "joint_7"],
+                "initial_positions": [0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0],
+                "command_topic": "/fake_joint_commands",
+                "state_topic": "/fake_joint_states",
+                "publish_rate": 100.0,
+            }
+        ],
+        condition=IfCondition(use_fake_hardware),
+    )
 
     nodes_to_launch = [
         kinova_arm_launch,
+        vel_integrator,
         kinova_vision_launch,
         table_camera_launch,
         move_group_node,
@@ -192,7 +214,6 @@ def launch_setup(context, *args, **kwargs):
         jacobian_publisher,
         table_scene_node,
         rviz_node,
-        # rosbridge_node,
     ]
 
     return nodes_to_launch

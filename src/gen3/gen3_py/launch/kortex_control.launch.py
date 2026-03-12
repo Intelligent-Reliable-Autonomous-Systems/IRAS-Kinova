@@ -18,9 +18,7 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     OpaqueFunction,
-    RegisterEventHandler,
 )
-from launch.event_handlers import OnProcessExit
 from launch.conditions import IfCondition
 from launch.substitutions import (
     Command,
@@ -50,12 +48,12 @@ def launch_setup(context, *args, **kwargs):
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
     robot_traj_controller = LaunchConfiguration("robot_traj_controller")
-    robot_controller = LaunchConfiguration("robot_controller")
     robot_pos_controller = LaunchConfiguration("robot_pos_controller")
     robot_hand_controller = LaunchConfiguration("robot_hand_controller")
     fault_controller = LaunchConfiguration("fault_controller")
     use_internal_bus_gripper_comm = LaunchConfiguration("use_internal_bus_gripper_comm")
     gripper_joint_name = LaunchConfiguration("gripper_joint_name")
+    robot_controller = LaunchConfiguration("robot_controller")
 
     # if we are using fake hardware then we can't use the internal gripper communications of the hardware
     use_fake_hardware_value = use_fake_hardware.perform(context)
@@ -66,7 +64,7 @@ def launch_setup(context, *args, **kwargs):
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare(description_package), "robots", description_file]),
+            PathJoinSubstitution([FindPackageShare(description_package), "robot", description_file]),
             " ",
             "robot_ip:=",
             robot_ip,
@@ -111,7 +109,7 @@ def launch_setup(context, *args, **kwargs):
     robot_controllers = PathJoinSubstitution(
         [
             FindPackageShare(description_package),
-            "arms/" + robot_type.perform(context) + "/" + dof.perform(context) + "dof/config",
+            "config",
             controllers_file,
         ]
     )
@@ -156,6 +154,32 @@ def launch_setup(context, *args, **kwargs):
         arguments=[robot_traj_controller, "--inactive", "-c", "/controller_manager"],
         condition=IfCondition(PythonExpression(['"', robot_controller, '" != "', robot_traj_controller, '"'])),
     )
+    robot_forward_vel_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["forward_velocity_controller", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" == "', "forward_velocity_controller", '"'])),
+    )
+
+    robot_forward_vel_controller_spawner_inactive = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["forward_velocity_controller", "--inactive", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" != "', "forward_velocity_controller", '"'])),
+    )
+    robot_forward_pos_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["forward_position_controller", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" == "', "forward_position_controller", '"'])),
+    )
+
+    robot_forward_pos_controller_spawner_inactive = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["forward_position_controller", "--inactive", "-c", "/controller_manager"],
+        condition=IfCondition(PythonExpression(['"', robot_controller, '" != "', "forward_position_controller", '"'])),
+    )
     robot_pos_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -194,6 +218,10 @@ def launch_setup(context, *args, **kwargs):
         fault_controller_spawner,
         robot_traj_controller_spawner_inactive,
         robot_pos_controller_spawner_inactive,
+        robot_forward_vel_controller_spawner,
+        robot_forward_vel_controller_spawner_inactive,
+        robot_forward_pos_controller_spawner,
+        robot_forward_pos_controller_spawner_inactive,
     ]
     start_robot_hand_controller = gripper.perform(context) != ""
     # Conditionally add robot_hand_controller_spawner
@@ -254,7 +282,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="kortex_description",
+            default_value="gen3_py",
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
@@ -315,14 +343,14 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "robot_traj_controller",
             default_value="joint_trajectory_controller",
-            description="Robot joint controller name.",
+            description="Robot joint controller to start.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_pos_controller",
             default_value="twist_controller",
-            description="Robot TCP pose controller name",
+            description="Robot twist controller to start",
         )
     )
     declared_arguments.append(
