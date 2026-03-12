@@ -6,14 +6,13 @@ Main launch file for Kinova Gen3 Arm with Robotiq 2F 85 gripper
 Written by Will Solow, 2025. IRAS Lab.
 """
 
+import os
 from pathlib import Path
+from launch.event_handlers import OnProcessExit
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import (
-    DeclareLaunchArgument,
-    IncludeLaunchDescription,
-    OpaqueFunction,
-)
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import (
@@ -25,6 +24,7 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from moveit_configs_utils import MoveItConfigsBuilder
+from launch_param_builder import ParameterBuilder
 
 
 def launch_setup(context, *args, **kwargs):
@@ -170,6 +170,32 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    servo_params = {"moveit_servo": ParameterBuilder("gen3lite_py").yaml("config/servo.yaml").to_dict()}
+
+    # Add a print to verify the path is correct
+
+    # This sets the update rate and planning group name for the acceleration limiting filter.
+    acceleration_filter_update_period = {"update_period": 0.01}
+    planning_group_name = {"moveit_servo.planning_group_name": "arm"}
+    planning_group_name = {"moveit_servo.move_group_name": "arm"}
+
+    print("######### SERVO PARAMS##############")
+    print(servo_params)
+    servo_node = Node(
+        package="moveit_servo",
+        executable="servo_node",
+        parameters=[
+            servo_params,
+            acceleration_filter_update_period,
+            planning_group_name,
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+            moveit_config.joint_limits,
+        ],
+        output="screen",
+    )
+
     rviz_config_file = PathJoinSubstitution([pkg_gen3litepy, "rviz", rviz_config_file_name])
 
     rviz_node = Node(
@@ -179,6 +205,14 @@ def launch_setup(context, *args, **kwargs):
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
+    )
+
+    delay_rviz_after_servo = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=servo_node,
+            on_exit=[rviz_node],
+        ),
+        condition=IfCondition(launch_rviz),
     )
 
     nodes_to_launch = [
@@ -191,6 +225,7 @@ def launch_setup(context, *args, **kwargs):
         body_pose_publisher,
         jacobian_publisher,
         rviz_node,
+        # servo_node
     ]
 
     return nodes_to_launch
