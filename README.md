@@ -147,3 +147,14 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
     ```
     ros2 run gen3_controllers gen3_reach_isaac
     ```
+
+
+
+ros2 topic pub -r 30 servo_node/delta_twist_cmds geometry_msgs/msg/TwistStamped "{twist: {linear: {z: 0.01}}}"
+ros2 control switch_controllers --activate forward_position_controller --deactivate joint_trajectory_controller
+ros2 control switch_controllers --activate joint_trajectory_controller --deactivate forward_position_controller
+ros2 control switch_controllers --activate forward_velocity_controller --deactivate joint_trajectory_controller
+
+
+ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"
+

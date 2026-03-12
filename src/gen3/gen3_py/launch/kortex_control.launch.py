@@ -122,6 +122,7 @@ def launch_setup(context, *args, **kwargs):
             ("~/robot_description", "/robot_description"),
         ],
         output="both",
+        arguments=["--rosargs", "--log-level", "error"],
     )
 
     robot_state_publisher_node = Node(

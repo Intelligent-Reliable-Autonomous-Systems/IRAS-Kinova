@@ -166,6 +166,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config.to_dict(),
         ],
+        arguments=["--ros-args", "--log-level", "ERROR"],
     )
 
     servo_params = {"moveit_servo": ParameterBuilder("gen3lite_py").yaml("config/servo.yaml").to_dict()}
@@ -177,8 +178,6 @@ def launch_setup(context, *args, **kwargs):
     planning_group_name = {"moveit_servo.planning_group_name": "arm"}
     planning_group_name = {"moveit_servo.move_group_name": "arm"}
 
-    print("######### SERVO PARAMS##############")
-    print(servo_params)
     servo_node = Node(
         package="moveit_servo",
         executable="servo_node",
@@ -222,16 +221,16 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
-        # table_camera_launch,
-        # table_scene_node,
-        # move_group_node,
-        # ee_publisher,
-        # robot_info_publisher,
-        # body_pose_publisher,
-        # jacobian_publisher,
-        vel_integrator,
+        table_camera_launch,
+        table_scene_node,
+        move_group_node,
+        ee_publisher,
+        robot_info_publisher,
+        body_pose_publisher,
+        jacobian_publisher,
+        # vel_integrator,
         rviz_node,
-        # servo_node
+        servo_node,
     ]
 
     return nodes_to_launch

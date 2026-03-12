@@ -68,7 +68,8 @@ class LinkPosePublisher(Node):
 
             self.pub.publish(pose_msg)
         else:
-            self.get_logger().warn("Translation from world to `base_link` is None!")
+            pass
+            # self.get_logger().warn("Translation from world to `base_link` is None!")
 
     def get_link_pose(self, link_name: str, reference_frame: str = "world") -> TransformStamped:
         """Look up the latest transform between links.

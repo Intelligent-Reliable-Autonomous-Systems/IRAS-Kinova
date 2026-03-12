@@ -138,6 +138,9 @@ def launch_setup(context, *args, **kwargs):
             "joint_state_broadcaster",
             "--controller-manager",
             "/controller_manager",
+            "--ros-args",
+            "--log-level",
+            "ERROR",
         ],
     )
 
