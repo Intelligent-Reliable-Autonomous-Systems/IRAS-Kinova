@@ -23,6 +23,7 @@ from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
 )
+from launch_param_builder import ParameterBuilder
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -54,7 +55,7 @@ def launch_setup(context, *args, **kwargs):
 
     moveit_controllers = Path(get_package_share_directory("gen3_py")) / "config" / "moveit_controllers.yaml"
 
-    robot_path = Path(get_package_share_directory("gen3_py")) / "robot" / "gen3_macro.xacro"
+    robot_path = Path(get_package_share_directory("gen3_py")) / "robot" / "gen3.xacro"
 
     robot_description_content = Command(
         [
@@ -176,6 +177,26 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    servo_params = {"moveit_servo": ParameterBuilder("gen3_py").yaml("config/servo.yaml").to_dict()}
+
+    acceleration_filter_update_period = {"update_period": 0.01}
+    planning_group_name = {"planning_group_name": "manipulator"}
+
+    servo_node = Node(
+        package="moveit_servo",
+        executable="servo_node",
+        parameters=[
+            servo_params,
+            acceleration_filter_update_period,
+            planning_group_name,
+            moveit_config.robot_description,
+            moveit_config.robot_description_semantic,
+            moveit_config.robot_description_kinematics,
+            moveit_config.joint_limits,
+        ],
+        output="screen",
+    )
+
     rviz_config_file = PathJoinSubstitution([pkg_gen3py, "rviz", rviz_config_file_name])
 
     rviz_node = Node(
@@ -205,14 +226,15 @@ def launch_setup(context, *args, **kwargs):
     nodes_to_launch = [
         kinova_arm_launch,
         vel_integrator,
-        kinova_vision_launch,
-        table_camera_launch,
-        move_group_node,
-        ee_publisher,
-        robot_info_publisher,
-        body_pose_publisher,
-        jacobian_publisher,
-        table_scene_node,
+        # kinova_vision_launch,
+        # table_camera_launch,
+        servo_node,
+        # move_group_node,
+        # ee_publisher,
+        # robot_info_publisher,
+        # body_pose_publisher,
+        # jacobian_publisher,
+        # table_scene_node,
         rviz_node,
     ]
 
