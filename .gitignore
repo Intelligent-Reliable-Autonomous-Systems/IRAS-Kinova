@@ -4,6 +4,7 @@ log/
 install/
 # IDE ignores
 .vscode/
+*.pdf
 
 # Third party code, not maintained by us:
 src/third_party/
