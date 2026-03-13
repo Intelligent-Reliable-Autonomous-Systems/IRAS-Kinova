@@ -16,6 +16,7 @@ setup(
         (os.path.join("share", package_name, "rviz"), glob("rviz/*.rviz")),
         (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
         (os.path.join("share", package_name, "robot"), glob("robot/*.xacro")),
+        (os.path.join("share", package_name, "robot"), glob("robot/*.urdf")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -30,12 +31,13 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "ee_pub = gen3_py.ee_publisher:main",
-            "robot_info=gen3_py.robot_info:main",
-            "body_pose=gen3_py.link_pose_publisher:main",
-            "jacobian_pub=gen3_py.jacobian_pub:main",
-            "vel_integrator=gen3_py.velocity_integrator:main",
-            "twist_watch=gen3_py.twist_watch:main",
+            "ee_pub = gen3_py.info.ee_publisher:main",
+            "robot_info=gen3_py.info.robot_info:main",
+            "body_pose=gen3_py.info.link_pose_publisher:main",
+            "jacobian_pub=gen3_py.info.jacobian_pub:main",
+            "vel_integrator=gen3_py.sim.velocity_integrator:main",
+            "twist_watch=gen3_py.safety.twist_watch:main",
+            "safety_filter=gen3_py.safety.safety_filter:main",
         ],
     },
 )

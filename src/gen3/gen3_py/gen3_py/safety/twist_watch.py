@@ -35,7 +35,7 @@ class TwistWatchdog(Node):
         super().__init__("twist_watchdog")
 
         # ---------- parameters ----------
-        self.declare_parameter("timeout_sec", 1.0)
+        self.declare_parameter("timeout_sec", 1.4)
         self.declare_parameter("input_topic", "twist_controller/commands")
         self.declare_parameter("output_topic", "twist_controller/commands")
         self.declare_parameter("timer_period_sec", 0.1)  # watchdog check rate

@@ -34,6 +34,7 @@ def launch_setup(context, *args, **kwargs):
     pkg_kortex_vision = get_package_share_directory("kinova_vision")
     pkg_realsense = get_package_share_directory("iras_realsense")
     pkg_gen3py = get_package_share_directory("gen3_py")
+    pkg_description = get_package_share_directory("kortex_description")
 
     # Variables
     use_fake_hardware = LaunchConfiguration("use_fake_hardware", default="true")
@@ -52,6 +53,8 @@ def launch_setup(context, *args, **kwargs):
             "ros2_controllers.yaml",
         ]
     )
+
+    robot_urdf = PathJoinSubstitution([pkg_gen3py, "robot", "gen3_28f5.urdf"])
 
     moveit_controllers = Path(get_package_share_directory("gen3_py")) / "config" / "moveit_controllers.yaml"
 
@@ -118,17 +121,6 @@ def launch_setup(context, *args, **kwargs):
         name="table_scene_visualizer",
         output="screen",
         # condition=IfCondition(rviz2),
-    )
-
-    ee_publisher = Node(
-        package="gen3_py",
-        executable="ee_pub",
-        parameters=[
-            {
-                "base_frame": "base_link",
-                "ee_frame": "end_effector_link",
-            }
-        ],
     )
 
     robot_info_publisher = Node(
@@ -227,6 +219,11 @@ def launch_setup(context, *args, **kwargs):
         package="gen3_py",
         executable="twist_watch",
     )
+    safety_filter = Node(
+        package="gen3_py",
+        executable="safety_filter",
+        parameters=[{"urdf_filename": robot_urdf}],
+    )
 
     nodes_to_launch = [
         kinova_arm_launch,
@@ -235,12 +232,12 @@ def launch_setup(context, *args, **kwargs):
         table_camera_launch,
         servo_node,
         move_group_node,
-        ee_publisher,
         robot_info_publisher,
         body_pose_publisher,
         jacobian_publisher,
         table_scene_node,
         twist_pause,
+        safety_filter,
         rviz_node,
     ]
 
