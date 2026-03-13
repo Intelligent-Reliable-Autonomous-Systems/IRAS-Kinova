@@ -223,18 +223,24 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_fake_hardware),
     )
 
+    twist_pause = Node(
+        package="gen3_py",
+        executable="twist_watch",
+    )
+
     nodes_to_launch = [
         kinova_arm_launch,
         vel_integrator,
-        # kinova_vision_launch,
-        # table_camera_launch,
+        kinova_vision_launch,
+        table_camera_launch,
         servo_node,
-        # move_group_node,
-        # ee_publisher,
-        # robot_info_publisher,
-        # body_pose_publisher,
-        # jacobian_publisher,
-        # table_scene_node,
+        move_group_node,
+        ee_publisher,
+        robot_info_publisher,
+        body_pose_publisher,
+        jacobian_publisher,
+        table_scene_node,
+        twist_pause,
         rviz_node,
     ]
 

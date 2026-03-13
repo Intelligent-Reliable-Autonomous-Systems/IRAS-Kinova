@@ -35,6 +35,7 @@ setup(
             "body_pose=gen3_py.link_pose_publisher:main",
             "jacobian_pub=gen3_py.jacobian_pub:main",
             "vel_integrator=gen3_py.velocity_integrator:main",
+            "twist_watch=gen3_py.twist_watch:main",
         ],
     },
 )
