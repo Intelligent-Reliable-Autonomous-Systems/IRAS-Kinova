@@ -154,7 +154,7 @@
     <parent link="base_link"/>
     <child link="shoulder_link"/>
     <axis xyz="0 0 1"/>
-    <limit effort="39" lower="-2.69" upper="2.69" velocity="1.6"/>
+    <limit effort="35" lower="-2.69" upper="2.69" velocity="1.6"/>
   </joint>
   <link name="arm_link">
     <inertial>
@@ -186,7 +186,7 @@
     <parent link="shoulder_link"/>
     <child link="arm_link"/>
     <axis xyz="0 0 1"/>
-    <limit effort="39" lower="-2.69" upper="2.69" velocity="1.6"/>
+    <limit effort="35" lower="-2.69" upper="2.69" velocity="1.6"/>
   </joint>
   <link name="forearm_link">
     <inertial>
@@ -218,7 +218,7 @@
     <parent link="arm_link"/>
     <child link="forearm_link"/>
     <axis xyz="0 0 1"/>
-    <limit effort="39" lower="-2.69" upper="2.69" velocity="1.6"/>
+    <limit effort="35" lower="-2.69" upper="2.69" velocity="1.6"/>
   </joint>
   <link name="lower_wrist_link">
     <inertial>
