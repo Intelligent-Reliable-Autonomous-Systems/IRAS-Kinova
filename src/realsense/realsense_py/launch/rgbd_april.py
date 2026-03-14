@@ -11,7 +11,7 @@ def generate_launch_description():
     kinova_base_link_frame = "base_link"
     tag0_anchor_frame = "tag0_anchor"
     camera_frame = "camera_color_frame"
-    tag_frame = "tag36h11:0"
+    tag_frame = "tag36h11:3"
     return LaunchDescription(
         [
             Node(
@@ -57,7 +57,7 @@ def generate_launch_description():
                         },
                         "tag": {
                             "ids": [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                            "sizes": [0.1, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036, 0.036],
+                            "sizes": [0.1, 0.036, 0.036, 0.1, 0.036, 0.036, 0.036, 0.036, 0.036],
                         },
                     }
                 ],
