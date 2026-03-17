@@ -54,7 +54,7 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
-    robot_urdf = PathJoinSubstitution([pkg_gen3py, "robot", "gen3_28f5.urdf"])
+    robot_urdf = PathJoinSubstitution([pkg_gen3py, "robot", "gen3_2f85.urdf"])
 
     moveit_controllers = Path(get_package_share_directory("gen3_py")) / "config" / "moveit_controllers.yaml"
 
