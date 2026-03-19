@@ -33,22 +33,18 @@
           </xacro:unless>
         </xacro:if>
         <xacro:if value="${sim_isaac}">
-          <xacro:unless value="${moveit_active}">
-            <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-            <param name="joint_commands_topic">${isaac_joint_commands}</param>
-            <param name="joint_states_topic">${isaac_joint_states}</param>
-          </xacro:unless>
+          <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+          <param name="joint_commands_topic">${isaac_joint_commands}</param>
+          <param name="joint_states_topic">${isaac_joint_states}</param>
         </xacro:if>
         <xacro:if value="${use_fake_hardware}">
-          <xacro:unless value="${moveit_active}">
-            <plugin>mock_components/GenericSystem</plugin>
-            <param name="fake_sensor_commands">${fake_sensor_commands}</param>
-            <param name="state_following_offset">0.0</param>
-            <param name="calculate_dynamics">true</param>
-            <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-            <param name="joint_commands_topic">/fake_joint_commands</param>
-            <param name="joint_states_topic">/fake_joint_states</param>
-          </xacro:unless>
+          <plugin>mock_components/GenericSystem</plugin>
+          <param name="fake_sensor_commands">${fake_sensor_commands}</param>
+          <param name="state_following_offset">0.0</param>
+          <param name="calculate_dynamics">true</param>
+          <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+          <param name="joint_commands_topic">/fake_joint_commands</param>
+          <param name="joint_states_topic">/fake_joint_states</param>
         </xacro:if>
         <xacro:unless value="${use_fake_hardware or sim_gazebo or sim_isaac}">
           <xacro:unless value="${moveit_active}">

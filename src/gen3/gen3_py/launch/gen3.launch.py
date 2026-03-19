@@ -171,16 +171,11 @@ def launch_setup(context, *args, **kwargs):
 
     servo_params = {"moveit_servo": ParameterBuilder("gen3_py").yaml("config/servo.yaml").to_dict()}
 
-    acceleration_filter_update_period = {"update_period": 0.01}
-    planning_group_name = {"planning_group_name": "manipulator"}
-
     servo_node = Node(
         package="moveit_servo",
         executable="servo_node",
         parameters=[
             servo_params,
-            acceleration_filter_update_period,
-            planning_group_name,
             moveit_config.robot_description,
             moveit_config.robot_description_semantic,
             moveit_config.robot_description_kinematics,
@@ -200,16 +195,15 @@ def launch_setup(context, *args, **kwargs):
         arguments=["-d", rviz_config_file],
     )
 
-    vel_integrator = Node(
+    twist_integrator = Node(
         package="gen3_py",
-        executable="vel_integrator",
+        executable="twist_integrator",
         parameters=[
             {
                 "joint_names": ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6", "joint_7"],
                 "initial_positions": [0.0, 0.523599, 0.0, 1.5708, 0.0, 0.785398, 0.0],
-                "command_topic": "/fake_joint_commands",
-                "state_topic": "/fake_joint_states",
                 "publish_rate": 100.0,
+                "robot_description": robot_description_content,
             }
         ],
         condition=IfCondition(use_fake_hardware),
@@ -227,15 +221,15 @@ def launch_setup(context, *args, **kwargs):
 
     nodes_to_launch = [
         kinova_arm_launch,
-        vel_integrator,
-        kinova_vision_launch,
-        table_camera_launch,
-        servo_node,
-        move_group_node,
-        robot_info_publisher,
-        body_pose_publisher,
-        jacobian_publisher,
-        table_scene_node,
+        twist_integrator,
+        # kinova_vision_launch,
+        # table_camera_launch,
+        # servo_node,
+        # move_group_node,
+        # robot_info_publisher,
+        # body_pose_publisher,
+        # jacobian_publisher,
+        # table_scene_node,
         twist_pause,
         safety_filter,
         rviz_node,

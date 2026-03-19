@@ -157,7 +157,6 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config.to_dict(),
         ],
-        arguments=["--ros-args", "--log-level", "ERROR"],
     )
 
     servo_params = {"moveit_servo": ParameterBuilder("gen3lite_py").yaml("config/servo.yaml").to_dict()}
@@ -205,6 +204,7 @@ def launch_setup(context, *args, **kwargs):
                 "command_topic": "/fake_joint_commands",
                 "state_topic": "/fake_joint_states",
                 "publish_rate": 100.0,
+                "robot_description": robot_description_content,
             }
         ],
         condition=IfCondition(use_fake_hardware),
@@ -221,17 +221,17 @@ def launch_setup(context, *args, **kwargs):
     )
     nodes_to_launch = [
         kinova_arm_launch,
-        table_camera_launch,
-        table_scene_node,
-        move_group_node,
-        robot_info_publisher,
-        body_pose_publisher,
-        jacobian_publisher,
+        # table_camera_launch,
+        # table_scene_node,
+        # move_group_node,
+        # robot_info_publisher,
+        # body_pose_publisher,
+        # jacobian_publisher,
         # vel_integrator,
         rviz_node,
-        servo_node,
-        twist_pause,
-        safety_filter,
+        # servo_node,
+        # twist_pause,
+        # safety_filter,
     ]
 
     return nodes_to_launch

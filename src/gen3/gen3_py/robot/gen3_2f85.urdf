@@ -369,6 +369,13 @@
     <child link="gen3_end_effector_link"/>
     <axis xyz="0 0 0"/>
   </joint>
+  <link name="gen3_tool_frame"/>
+  <joint name="gen3_tool_frame_joint" type="fixed">
+    <origin rpy="0 0 0.0" xyz="0 0 0.120"/>
+    <parent link="gen3_end_effector_link"/>
+    <child link="gen3_tool_frame"/>
+    <axis xyz="0 0 0"/>
+  </joint>
   <link name="gen3_robotiq_85_base_link">
     <visual>
       <geometry>

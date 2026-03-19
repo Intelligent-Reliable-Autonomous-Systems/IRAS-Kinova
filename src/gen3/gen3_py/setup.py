@@ -35,7 +35,7 @@ setup(
             "robot_info=gen3_py.info.robot_info:main",
             "body_pose=gen3_py.info.link_pose_publisher:main",
             "jacobian_pub=gen3_py.info.jacobian_pub:main",
-            "vel_integrator=gen3_py.sim.velocity_integrator:main",
+            "twist_integrator=gen3_py.sim.twist_integrator:main",
             "twist_watch=gen3_py.safety.twist_watch:main",
             "safety_filter=gen3_py.safety.safety_filter:main",
         ],

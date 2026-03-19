@@ -99,6 +99,12 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
     ]
     }" -1
 
+    ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/JointTrajectory "{
+    joint_names: [joint_1, joint_2, joint_3, joint_4, joint_5, joint_6, joint_7],
+    points: [
+        { positions: [0, 0.523599, 0, 1.5708, 0, .785398, 0], time_from_start: { sec: 0 } },
+    ]
+    }" -1
     
 
 3. Try resetting the robot
@@ -157,4 +163,5 @@ ros2 control switch_controllers --activate forward_velocity_controller --deactiv
 
 
 ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"
+
 
