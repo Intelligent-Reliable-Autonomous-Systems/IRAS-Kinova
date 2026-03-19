@@ -9,13 +9,13 @@ Author: Natalia Zaitseva
 """
 
 import numpy as np
-from rclpy.node import Node
 import rclpy
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from geometry_msgs.msg import Twist
-from sensor_msgs.msg import JointState
-from urdf_parser_py.urdf import URDF
 from builtin_interfaces.msg import Duration
+from geometry_msgs.msg import TwistStamped
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from urdf_parser_py.urdf import URDF
 
 
 class SafetyFilter(Node):
@@ -31,6 +31,7 @@ class SafetyFilter(Node):
         self.declare_parameter("pos_threshold", 0.01)
         self.declare_parameter("vel_threshold", 0.1)
         self.declare_parameter("eff_threshold_fac", 0.80)
+        self.declare_parameter("use_fake_hardware", False)
 
         self.urdf_filename = self.get_parameter("urdf_filename").value
         self.joint_state_topic = self.get_parameter("joint_state_topic").value
@@ -39,6 +40,9 @@ class SafetyFilter(Node):
         self.in_joint_traj_topic = self.get_parameter("in_joint_traj_topic").value
         self.in_twist_topic = self.get_parameter("in_twist_topic").value
         self.num_arm_joints = self.get_parameter("num_arm_joints").value
+        self.fake_hardware = self.get_parameter("use_fake_hardware").value
+
+        self.get_logger().warn(f"SAFETY FILTER: {self.fake_hardware}")
 
         self.state_topic = "/joint_states"
         self.current_pos = None
@@ -46,9 +50,9 @@ class SafetyFilter(Node):
         self.current_effort = None
         self.state_sub = self.create_subscription(JointState, self.state_topic, self.state_cb, 10)
         self.joint_cmd_sub = self.create_subscription(JointTrajectory, self.in_joint_traj_topic, self.joint_cmd_cb, 10)
-        self.twist_cmd_sub = self.create_subscription(Twist, self.in_twist_topic, self.twist_cmd_cb, 10)
+        self.twist_cmd_sub = self.create_subscription(TwistStamped, self.in_twist_topic, self.twist_cmd_cb, 10)
         self.joint_cmd_pub = self.create_publisher(JointTrajectory, self.joint_traj_topic, 10)
-        self.twist_cmd_pub = self.create_publisher(Twist, self.twist_topic, 10)
+        self.twist_cmd_pub = self.create_publisher(TwistStamped, self.twist_topic, 10)
 
         self.joint_limits = self.read_joint_limits(self.urdf_filename)
 
@@ -69,7 +73,7 @@ class SafetyFilter(Node):
         if self.current_pos is None or self.current_vel is None:
             return
 
-        safe = self.safety_arm_check()
+        safe = self.safety_arm_check() if not self.fake_hardware else True
         if safe:
             self.joint_cmd_pub.publish(msg)
         else:
@@ -92,13 +96,13 @@ class SafetyFilter(Node):
         if safe:
             self.twist_cmd_pub.publish(msg)
         else:
-            twist_msg = Twist()
-            twist_msg.linear.x = 0.0
-            twist_msg.linear.y = 0.0
-            twist_msg.linear.z = 0.0
-            twist_msg.angular.x = 0.0
-            twist_msg.angular.y = 0.0
-            twist_msg.angular.z = 0.0
+            twist_msg = TwistStamped()
+            twist_msg.twist.linear.x = 0.0
+            twist_msg.twist.linear.y = 0.0
+            twist_msg.twist.linear.z = 0.0
+            twist_msg.twist.angular.x = 0.0
+            twist_msg.twist.angular.y = 0.0
+            twist_msg.twist.angular.z = 0.0
             self.twist_cmd_pub.publish(twist_msg)
             self.get_logger().warn("BLOCKED: Unsafe Twist Command")
 
@@ -147,7 +151,6 @@ class SafetyFilter(Node):
 
             # check for continuous joints
             if lower_lim == upper_lim:
-                self.get_logger().warn(f"Skipping {joint_name} due to zero-range limits")
                 continue
 
             if (
@@ -165,6 +168,15 @@ class SafetyFilter(Node):
                 )
                 return False
         return True
+
+
+def parse_bool(s: str) -> bool:
+    if s.lower() == "true":
+        return True
+    elif s.lower() == "false":
+        return False
+    else:
+        raise ValueError(f"Cannot convert '{s}' to bool")
 
 
 def main(args=None):

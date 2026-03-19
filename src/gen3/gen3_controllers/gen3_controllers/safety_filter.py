@@ -9,12 +9,12 @@ Author: Natalia Zaitseva
 """
 
 import numpy as np
-from rclpy.node import Node
 import rclpy
-from trajectory_msgs.msg import JointTrajectory
-from sensor_msgs.msg import JointState
-from urdf_parser_py.urdf import URDF
 from gen3_skills.utils import ARM_JOINTS
+from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from trajectory_msgs.msg import JointTrajectory
+from urdf_parser_py.urdf import URDF
 
 
 class SafetyFilter(Node):
@@ -104,7 +104,6 @@ class SafetyFilter(Node):
 
             # check for continuous joints
             if lower_lim == upper_lim:
-                self.get_logger().warn(f"Skipping {joint_name} due to zero-range limits")
                 continue
 
             # dt = step_size in that case
@@ -116,7 +115,7 @@ class SafetyFilter(Node):
                 self.get_logger().info(f"{joint_name} exceeds allowable joint limits")
                 return False
             if self.current_torq[i] > effort_lim:
-                print(f"{joint_name} exceeds the torque limits")
+                self.get_logger().info(f"{joint_name} exceeds the torque limits")
                 return False
         return True
 

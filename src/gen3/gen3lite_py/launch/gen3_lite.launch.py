@@ -214,7 +214,7 @@ def launch_setup(context, *args, **kwargs):
     safety_filter = Node(
         package="gen3_py",
         executable="safety_filter",
-        parameters=[{"urdf_filename": robot_urdf, "num_arm_joints": 6}],
+        parameters=[{"urdf_filename": robot_urdf, "num_arm_joints": 6, "use_fake_hardware": use_fake_hardware}],
     )
     nodes_to_launch = [
         kinova_arm_launch,
