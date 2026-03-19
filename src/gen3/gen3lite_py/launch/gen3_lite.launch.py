@@ -194,16 +194,13 @@ def launch_setup(context, *args, **kwargs):
         arguments=["-d", rviz_config_file],
     )
 
-    vel_integrator = Node(
+    twist_integrator = Node(
         package="gen3_py",
-        executable="vel_integrator",
+        executable="twist_integrator",
         parameters=[
             {
                 "joint_names": ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"],
                 "initial_positions": [0.2, -0.18, 2.16, -1.57, -0.6, -1.34],
-                "command_topic": "/fake_joint_commands",
-                "state_topic": "/fake_joint_states",
-                "publish_rate": 100.0,
                 "robot_description": robot_description_content,
             }
         ],
@@ -221,17 +218,17 @@ def launch_setup(context, *args, **kwargs):
     )
     nodes_to_launch = [
         kinova_arm_launch,
-        # table_camera_launch,
-        # table_scene_node,
-        # move_group_node,
-        # robot_info_publisher,
-        # body_pose_publisher,
-        # jacobian_publisher,
-        # vel_integrator,
+        table_camera_launch,
+        table_scene_node,
+        move_group_node,
+        robot_info_publisher,
+        body_pose_publisher,
+        jacobian_publisher,
+        twist_integrator,
         rviz_node,
-        # servo_node,
-        # twist_pause,
-        # safety_filter,
+        servo_node,
+        twist_pause,
+        safety_filter,
     ]
 
     return nodes_to_launch
