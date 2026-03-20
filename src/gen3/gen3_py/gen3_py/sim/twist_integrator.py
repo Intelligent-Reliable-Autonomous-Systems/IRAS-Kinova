@@ -23,7 +23,7 @@ import numpy as np
 import PyKDL as kdl
 import rclpy
 from builtin_interfaces.msg import Duration
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import Twist
 from kdl_parser_py.urdf import treeFromUrdfModel
 from rclpy.node import Node
 from rclpy.time import Time
@@ -31,7 +31,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from urdf_parser_py.urdf import URDF
 
 
-class VelocityIntegrator(Node):
+class TwistIntegrator(Node):
     def __init__(self):
         super().__init__("twist_integrator")
 
@@ -62,13 +62,13 @@ class VelocityIntegrator(Node):
         # Time tracking for integration
         self.last_twist_time: Time | None = None
 
-        self.create_subscription(TwistStamped, in_topic, self._twist_command_callback, 10)
+        self.create_subscription(Twist, in_topic, self._twist_command_callback, 10)
         self.state_pub = self.create_publisher(JointTrajectory, out_topic, 10)
 
         self.joint_positions = np.zeros(self.num_joints, dtype=np.float32)
 
         self.get_logger().info(
-            f"VelocityIntegrator started\n"
+            f"TwistIntegrator started\n"
             f"  Joints        : {self.joint_names}\n"
             f"  Initial pos   : {self.positions.tolist()}\n"
             f"  Command topic : {in_topic}\n"
@@ -83,15 +83,15 @@ class VelocityIntegrator(Node):
         self.base_link = "base_link"
         self.ok, self.tree = treeFromUrdfModel(self.robot)
 
-    def _twist_command_callback(self, msg: TwistStamped):
+    def _twist_command_callback(self, msg: Twist):
         twist = np.array(
             [
-                msg.twist.linear.x,
-                msg.twist.linear.y,
-                msg.twist.linear.z,
-                msg.twist.angular.x,
-                msg.twist.angular.y,
-                msg.twist.angular.z,
+                msg.linear.x,
+                msg.linear.y,
+                msg.linear.z,
+                msg.angular.x,
+                msg.angular.y,
+                msg.angular.z,
             ]
         )
 
@@ -199,7 +199,7 @@ class VelocityIntegrator(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = VelocityIntegrator()
+    node = TwistIntegrator()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

@@ -11,7 +11,7 @@ Author: Natalia Zaitseva
 import numpy as np
 import rclpy
 from builtin_interfaces.msg import Duration
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import Twist
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -50,9 +50,9 @@ class SafetyFilter(Node):
         self.current_effort = None
         self.state_sub = self.create_subscription(JointState, self.state_topic, self.state_cb, 10)
         self.joint_cmd_sub = self.create_subscription(JointTrajectory, self.in_joint_traj_topic, self.joint_cmd_cb, 10)
-        self.twist_cmd_sub = self.create_subscription(TwistStamped, self.in_twist_topic, self.twist_cmd_cb, 10)
+        self.twist_cmd_sub = self.create_subscription(Twist, self.in_twist_topic, self.twist_cmd_cb, 10)
         self.joint_cmd_pub = self.create_publisher(JointTrajectory, self.joint_traj_topic, 10)
-        self.twist_cmd_pub = self.create_publisher(TwistStamped, self.twist_topic, 10)
+        self.twist_cmd_pub = self.create_publisher(Twist, self.twist_topic, 10)
 
         self.joint_limits = self.read_joint_limits(self.urdf_filename)
 
@@ -92,17 +92,17 @@ class SafetyFilter(Node):
         Runs when the message is published to cmd_safety"""
         if self.current_pos is None or self.current_vel is None:
             return
-        safe = self.safety_arm_check()
+        safe = self.safety_arm_check() if not self.fake_hardware else True
         if safe:
             self.twist_cmd_pub.publish(msg)
         else:
-            twist_msg = TwistStamped()
-            twist_msg.twist.linear.x = 0.0
-            twist_msg.twist.linear.y = 0.0
-            twist_msg.twist.linear.z = 0.0
-            twist_msg.twist.angular.x = 0.0
-            twist_msg.twist.angular.y = 0.0
-            twist_msg.twist.angular.z = 0.0
+            twist_msg = Twist()
+            twist_msg.linear.x = 0.0
+            twist_msg.linear.y = 0.0
+            twist_msg.linear.z = 0.0
+            twist_msg.angular.x = 0.0
+            twist_msg.angular.y = 0.0
+            twist_msg.angular.z = 0.0
             self.twist_cmd_pub.publish(twist_msg)
             self.get_logger().warn("BLOCKED: Unsafe Twist Command")
 
@@ -168,16 +168,6 @@ class SafetyFilter(Node):
                 )
                 return False
         return True
-
-
-def parse_bool(s: str) -> bool:
-    if s.lower() == "true":
-        return True
-    elif s.lower() == "false":
-        return False
-    else:
-        raise ValueError(f"Cannot convert '{s}' to bool")
-
 
 def main(args=None):
     rclpy.init(args=args)

@@ -201,6 +201,8 @@ def launch_setup(context, *args, **kwargs):
             {
                 "joint_names": ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"],
                 "initial_positions": [0.2, -0.18, 2.16, -1.57, -0.6, -1.34],
+                "position_limits_min": [-6.28, -2.41, -6.28, -2.66, -6.28, -2.23],
+                "position_limits_max": [6.28, 2.41, 6.28, 2.66, 6.28, 2.23],
                 "robot_description": robot_description_content,
             }
         ],

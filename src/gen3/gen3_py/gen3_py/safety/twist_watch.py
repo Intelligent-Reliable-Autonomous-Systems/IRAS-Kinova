@@ -9,7 +9,6 @@ a zero Twist to the same topic (or a configurable output topic).
 
 import rclpy
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from geometry_msgs.msg import Twist
 
 
