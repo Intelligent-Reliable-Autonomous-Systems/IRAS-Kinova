@@ -86,8 +86,8 @@ def generate_launch_description():
                 executable="static_transform_publisher",
                 name="tag0_anchor_static_tf_pub",
                 arguments=[
-                    "0.13",  # x
-                    "0.0",  # y
+                    "0.12",  # x
+                    "0.005",  # y
                     "0.0",  # z
                     "0.0",  # qx
                     "0.0",  # qy
