@@ -29,6 +29,7 @@ low_latency_mode: false  # Set this to true to publish as soon as an incoming Tw
 
 # What type of topic does your robot driver expect?
 # Currently supported are std_msgs/Float64MultiArray or trajectory_msgs/JointTrajectory
+#command_out_type:  trajectory_msgs/JointTrajectory
 command_out_type:  std_msgs/Float64MultiArray
 
 # What to publish? Can save some bandwidth as most robots only require positions or velocities
@@ -41,14 +42,14 @@ low_pass_filter_coeff: 2.0  # Larger --> trust the filtered data more, trust the
 
 ## MoveIt properties
 move_group_name:  manipulator  # Often 'manipulator' or 'arm'
-planning_frame: base_link  # The MoveIt planning frame. Often 'base_link' or 'world'
+planning_frame: world  # The MoveIt planning frame. Often 'base_link' or 'world'
 
 ## Other frames
-ee_frame_name: end_effector_link  # The name of the end effector link, used to return the EE pose
+ee_frame_name: tool_frame  # The name of the end effector link, used to return the EE pose
 robot_link_command_frame:  base_link  # commands must be given in the frame of a robot link. Usually either the base or end effector
 
 ## Stopping behaviour
-incoming_command_timeout:  0.1  # Stop servoing if X seconds elapse without a new command
+incoming_command_timeout:  0.01  # Stop servoing if X seconds elapse without a new command
 # If 0, republish commands forever even if the robot is stationary. Otherwise, specify num. to publish.
 # Important because ROS may drop some messages and we need the robot to halt reliably.
 num_outgoing_halt_msgs_to_publish: 4

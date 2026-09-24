@@ -50,7 +50,7 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
 5. Source the ROS2 installation from the home directory
 
     ```
-    source opt/ros/jazzy/setup.bash
+    source /opt/ros/jazzy/setup.bash
     ```
 
 6. Install dependencies and build workspace:
@@ -165,3 +165,15 @@ ros2 control switch_controllers --activate forward_velocity_controller --deactiv
 ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"
 
 ros2 topic pub -r 30 /twist_controller/commands geometry_msgs/msg/Twist "{twist: {linear: {z: 0.01}}}"
+
+ros2 topic pub -r 30 /twist_controller/commands geometry_msgs/msg/Twist "{twist: {linear: {z: 0.00}}}"
+
+
+
+
+
+
+
+
+
+ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"

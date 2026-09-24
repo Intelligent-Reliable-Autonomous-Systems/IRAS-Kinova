@@ -169,6 +169,7 @@ class SafetyFilter(Node):
                 return False
         return True
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = SafetyFilter()
