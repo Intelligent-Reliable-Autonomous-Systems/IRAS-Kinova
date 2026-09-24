@@ -19,7 +19,7 @@ class TestServo(Node):
         msg = TwistStamped()
 
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = "end_effector_link"
+        msg.header.frame_id = "base_link"
 
         msg.twist.linear.z = -0.04
 
