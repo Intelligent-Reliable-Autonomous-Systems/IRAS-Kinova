@@ -2,7 +2,7 @@
 use_smoothing: true
 smoothing_filter_plugin_name: "online_signal_smoothing::ButterworthFilterPlugin"
 
-apply_twist_commands_about_ee_frame: false
+apply_twist_commands_about_ee_frame: true
 max_expected_latency: 0.1
 override_velocity_scaling_factor: 0.0  
 use_gazebo: false 
@@ -16,7 +16,7 @@ scale:
 
 ## Properties of outgoing commands
 publish_period: 0.01 
-low_latency_mode: false  # potentially try true 
+low_latency_mode: true  # Seems to work better when set to true
 
 # Command type for forward position controller
 command_out_type:  std_msgs/Float64MultiArray

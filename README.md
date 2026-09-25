@@ -5,17 +5,19 @@ Kinova Kortex Gen3 arm package for IRAS lab
 
 1. Connect robot ethernet cable to computer ethernet port
 2. Open Settings -> Network -> Wired Connection -> Properties 
-3. Select IPv4. Set IP address to 192.168.8.XX where XX > 10. Set Netmask to 255.255.255.0. Hit apply.
+3. Select IPv4. Set IP address to 192.168.1.XX where XX > 10. Set Netmask to 255.255.255.0. Hit apply.
 4. Unplug/replug ethernet cable from computer.
-5. Open browser to 192.168.8.10 (Gen3 IPv4 address). This opens the Kinova WebApp. Username/password is admin/admin.
+5. Open browser to 192.168.1.10 (Gen3 IPv4 address). This opens the Kinova WebApp. Username/password is admin/admin.
 6. See [Kinova Reference Guide](https://www.kinovarobotics.com/uploads/User-Guide-Gen3-R07.pdf) for more information.
+
+Sometimes need to assign IP address manually: sudo ip addr add 192.168.1.100/24 dev enp45s0
 
 # IRAS Alienware laptop
 
 1. Plug in Ethernet cable directly to laptop using port on left
-2. Robot is on 192.168.8.10, wired IP address must be set 192.168.8.11 (or greater than 10). This is sometimes finicky
-3. Check that control can be done in Gen3 Web App (Open FireFox and go to 192.168.8.10). Username/password is admin/admin
-4. If all this works, we can launch the robot: `ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.8.10 use_fake_hardware:=false gripper:=robotiq_2f_85`
+2. Robot is on 192.168.1.10, wired IP address must be set 192.168.1.11 (or greater than 10). This is sometimes finicky
+3. Check that control can be done in Gen3 Web App (Open FireFox and go to 192.168.1.10). Username/password is admin/admin
+4. If all this works, we can launch the robot: `ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.1.10 use_fake_hardware:=false gripper:=robotiq_2f_85`
 
 
 # Gazebo Installation
@@ -57,7 +59,7 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
 
     ```
     rosdep install --ignore-src --from-paths src -y -r
-    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install --parallel-workers 3
     ```
 
 7. Source the workspace
@@ -120,7 +122,7 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
 1. Launch the robot in rviz
 
     ```
-    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.10.yyy use_fake_hardware:=true gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.1.10 use_fake_hardware:=true gripper:=robotiq_2f_85
     ```
 
 2. OR launch the robot in Gazebo
@@ -140,7 +142,7 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
 1. Launch the robot hardware
 
     ```
-    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.8.10 use_fake_hardware:=false gripper:=robotiq_2f_85
+    ros2 launch gen3_py gen3.launch.py robot_ip:=192.168.1.10 use_fake_hardware:=false gripper:=robotiq_2f_85
     ```
 
 
@@ -156,24 +158,5 @@ Ensure that Ogre2 is installed (no Ogre 1.9). The language models can help with 
 
 
 
-ros2 topic pub -r 30 servo_node/delta_twist_cmds geometry_msgs/msg/Twist "{twist: {linear: {z: 0.01}}}"
 ros2 control switch_controllers --activate forward_position_controller --deactivate joint_trajectory_controller
-ros2 control switch_controllers --activate joint_trajectory_controller --deactivate forward_position_controller
-ros2 control switch_controllers --activate forward_velocity_controller --deactivate joint_trajectory_controller
-
-
-ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"
-
-ros2 topic pub -r 30 /twist_controller/commands geometry_msgs/msg/Twist "{twist: {linear: {z: 0.01}}}"
-
-ros2 topic pub -r 30 /twist_controller/commands geometry_msgs/msg/Twist "{twist: {linear: {z: 0.00}}}"
-
-
-
-
-
-
-
-
-
 ros2 service call /servo_node/switch_command_type moveit_msgs/srv/ServoCommandType "{command_type: 1}"

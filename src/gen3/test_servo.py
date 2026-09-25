@@ -21,7 +21,8 @@ class TestServo(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "base_link"
 
-        msg.twist.linear.z = -0.04
+        # msg.twist.linear.x = 0.02
+        msg.twist.angular.z = 0.1
 
         self.pub.publish(msg)
 
